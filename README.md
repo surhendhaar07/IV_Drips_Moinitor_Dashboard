@@ -10,8 +10,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-RTDB_&_Auth-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WebAssembly-003B57?logo=sqlite&logoColor=white)](https://sql.js.org/)
 [![ESP8266](https://img.shields.io/badge/Hardware-ESP8266_NodeMCU-E7352C?logo=espressif&logoColor=white)](https://www.espressif.com/)
-[![Prototype Cost](https://img.shields.io/badge/Estimated_Cost-₹1%2C000_--_₹2%2C000-brightgreen)](#-bill-of-materials--prototype-cost)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Prototype Cost](https://img.shields.io/badge/Prototype_Cost-₹1%2C620_--_₹2%2C000_Rs-brightgreen)](#-bill-of-materials--prototype-cost)
 
 ---
 
