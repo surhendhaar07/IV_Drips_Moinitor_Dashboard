@@ -7,9 +7,9 @@
 
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Firebase](https://img.shields.io/badge/Firebase-RTDB?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-Realtime_Database-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WebAssembly-003B57?logo=sqlite&logoColor=white)](https://sql.js.org/)
-[![ESP8266](https://img.shields.io/badge/Hardware-ESP8266_NodeMCU-E7352C?logo=espressif&logoColor=white)](https://www.espressif.com/)
+[![ESP8266](https://img.shields.io/badge/Hardware-ESP8266-E7352C?logo=espressif&logoColor=white)](https://www.espressif.com/)
 [![Prototype Cost](https://img.shields.io/badge/Prototype_Cost-₹1%2C620_--_₹2%2C000_Rs-brightgreen)](#-bill-of-materials--prototype-cost)
 
 ---
@@ -62,7 +62,7 @@ Therefore, an automated, reliable system is required to continuously monitor flu
 
 ## 💡 Proposed Solution
 
-The system attaches an **XKC-Y26-V non-contact liquid-level sensor** externally to the IV bottle/drip chamber, completely eliminating direct contact with sterile saline. An **ESP8266 NodeMCU** processes telemetry, sounds a local audible alarm, pushes real-time telemetry to a cloud dashboard over Wi-Fi, and controls an **SG90 micro-servo valve** to gently clamp the IV tube.
+The system attaches an **XKC-Y26-V non-contact liquid-level sensor** externally to the IV bottle/drip chamber, completely eliminating direct contact with sterile saline. An **ESP8266** processes telemetry, sounds a local audible alarm, pushes real-time telemetry to a cloud dashboard over Wi-Fi, and controls an **SG90 micro-servo valve** to gently clamp the IV tube.
 
 ### Automated Sequence of Operation:
 1. **Detection**: The XKC-Y26-V sensor detects that fluid has fallen below the critical sensing threshold.
@@ -116,7 +116,7 @@ The system attaches an **XKC-Y26-V non-contact liquid-level sensor** externally 
                                                              │
                                                              ▼
  ┌──────────────┐     ┌──────────────────────┐     ┌────────────────────┐
- │ (6) Servo    │     │ (5) Buzzer & Wi-Fi / │     │ (4) ESP8266 NodeMCU│
+ │ (6) Servo    │     │ (5) Buzzer & Wi-Fi / │     │ (4) ESP8266        │
  │  Motor       │◄────┤  Firebase Dashboard  │◄────┤ Detects Critical   │
  │  Activates   │     │  Alert Triggered     │     │ Condition          │
  └──────┬───────┘     └──────────────────────┘     └────────────────────┘
@@ -142,7 +142,7 @@ The system attaches an **XKC-Y26-V non-contact liquid-level sensor** externally 
 
 ```mermaid
 graph TD
-    subgraph Bedside_Node ["IoT Bedside Node (ESP8266 NodeMCU)"]
+    subgraph Bedside_Node ["IoT Bedside Node (ESP8266)"]
         Sensor["XKC-Y26-V Non-Contact Liquid Sensor"] -->|Digital In D5| ESP["ESP8266 Microcontroller"]
         Battery["3.7V LiPo Battery"] --> TP4056["TP4056 Charging Module"]
         TP4056 --> MT3608["MT3608 DC-DC 5V Step-Up"]
@@ -176,7 +176,7 @@ The system is designed with accessible, off-the-shelf commercial components to e
 
 | Component | Specification / Model | Purpose | Estimated Unit Cost (INR) |
 | :--- | :--- | :--- | :--- |
-| **Microcontroller** | ESP8266 NodeMCU (ESP-12E) | Core controller, Wi-Fi telemetry & logic | ₹300 |
+| **Microcontroller** | ESP8266 | Core controller, Wi-Fi telemetry & logic | ₹300 |
 | **Liquid Level Sensor** | XKC-Y26-V Non-Contact Sensor | Non-invasive capacitive saline detection | ₹450 |
 | **Actuator** | SG90 Micro Servo Motor | Mechanical gentle IV tubing clamp | ₹130 |
 | **Display** | 0.96" SSD1306 I2C OLED | Bedside display (Battery, State, Flow) | ₹220 |
@@ -389,7 +389,7 @@ The platform provides role-based credentials for immediate testing:
    #define FIREBASE_HOST "iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com"
    #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
    ```
-4. Under **Tools → Board**, select **NodeMCU 1.0 (ESP-12E Module)** and flash the board.
+4. Under **Tools → Board**, select your **ESP8266** board and flash the firmware.
 
 For complete wiring schematics, consult [ESP8266_SETUP.md](./ESP8266_SETUP.md).
 

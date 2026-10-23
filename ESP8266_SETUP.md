@@ -6,7 +6,7 @@ This web application is a Hospital Management & Telemetry Dashboard for IV Drip 
 
 ---
 
-## 2. Hardware Pinout & Architecture (ESP8266 NodeMCU)
+## 2. Hardware Pinout & Architecture (ESP8266)
 
 | Component | ESP8266 Pin | Pin Type | Function |
 | :--- | :--- | :--- | :--- |
