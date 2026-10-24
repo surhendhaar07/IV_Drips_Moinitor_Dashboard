@@ -174,18 +174,27 @@ graph TD
 
 The system is designed with accessible, off-the-shelf commercial components to ensure maximum affordability for rural and low-resource healthcare institutions:
 
-| Component | Specification / Model | Purpose | Estimated Unit Cost (INR) |
-| :--- | :--- | :--- | :--- |
-| **Microcontroller** | ESP8266 | Core controller, Wi-Fi telemetry & logic | ₹300 |
-| **Liquid Level Sensor** | XKC-Y26-V Non-Contact Sensor | Non-invasive capacitive saline detection | ₹450 |
-| **Actuator** | SG90 Micro Servo Motor | Mechanical gentle IV tubing clamp | ₹130 |
-| **Display** | 0.96" SSD1306 I2C OLED | Bedside display (Battery, State, Flow) | ₹220 |
-| **Acoustic Indicator**| 5V Active Buzzer | Local critical audible alarm | ₹25 |
-| **Rechargeable Battery**| 3.7V Li-ion / LiPo (1200mAh) | Portable un-tethered bedside power | ₹250 |
-| **Charging Module** | TP4056 with Protection | Micro-USB / Type-C battery charging | ₹45 |
-| **Voltage Regulator**| MT3608 DC-DC Step-Up | Steps up 3.7V LiPo to stable 5.0V | ₹50 |
-| **Enclosure & Wiring**| 2-Way Switch, PCB, Jumper Wires, 3D Mount | Circuit housing & tube clamp structure | ₹150 – ₹300 |
-| **Total Estimated Cost** | — | **Fully Functional Smart IoT Node** | **₹1,620 – ₹2,000 / unit** |
+| Component | Specification / Model | Purpose | Estimated Unit Cost (INR) | Datasheet |
+| :--- | :--- | :--- | :--- | :--- |
+| **Microcontroller** | ESP8266 | Core controller, Wi-Fi telemetry & logic | ₹300 | [ESP 8266.pdf](./Components%20Datasheet/ESP%208266.pdf) |
+| **Liquid Level Sensor** | XKC-Y26-V Non-Contact Sensor | Non-invasive capacitive saline detection | ₹450 | [XKC-Y26-V.pdf](./Components%20Datasheet/XKC-Y26-V-DC%205-24V%20Non-Contact%20Liquid%20Level%20Sensor.pdf) |
+| **Actuator** | SG90 Micro Servo Motor | Mechanical gentle IV tubing clamp | ₹130 | — |
+| **Display** | 0.96" SSD1306 I2C OLED | Bedside display (Battery, State, Flow) | ₹220 | [OLED Display.pdf](./Components%20Datasheet/OLED%20Display.pdf) |
+| **Acoustic Indicator**| 5V Active Buzzer | Local critical audible alarm | ₹25 | [Buzzer.pdf](./Components%20Datasheet/Buzzer.pdf) |
+| **Rechargeable Battery**| 3.7V Li-ion / LiPo (1200mAh) | Portable un-tethered bedside power | ₹250 | [Lipo Battery.pdf](./Components%20Datasheet/Lipo%20Battery.pdf) |
+| **Charging Module** | TP4056 with Protection | Micro-USB / Type-C battery charging | ₹45 | — |
+| **Voltage Regulator**| MT3608 DC-DC Step-Up | Steps up 3.7V LiPo to stable 5.0V | ₹50 | [buck booster.pdf](./Components%20Datasheet/buck%20booster.pdf) |
+| **Enclosure & Wiring**| 2-Way Switch, PCB, Jumper Wires, 3D Mount | Circuit housing & tube clamp structure | ₹150 – ₹300 | — |
+| **Total Estimated Cost** | — | **Fully Functional Smart IoT Node** | **₹1,620 – ₹2,000 / unit** | [All Datasheets](./Components%20Datasheet/) |
+
+### 📂 Components Datasheet Directory
+All hardware component datasheets and manufacturer specifications are archived in [`Components Datasheet/`](./Components%20Datasheet/):
+- 📄 [`ESP 8266.pdf`](./Components%20Datasheet/ESP%208266.pdf) — ESP8266 Wi-Fi Microcontroller Datasheet
+- 📄 [`XKC-Y26-V-DC 5-24V Non-Contact Liquid Level Sensor.pdf`](./Components%20Datasheet/XKC-Y26-V-DC%205-24V%20Non-Contact%20Liquid%20Level%20Sensor.pdf) — Non-Contact Saline Level Sensor Specifications
+- 📄 [`OLED Display.pdf`](./Components%20Datasheet/OLED%20Display.pdf) — 0.96" SSD1306 I2C OLED Module Technical Manual
+- 📄 [`buck booster.pdf`](./Components%20Datasheet/buck%20booster.pdf) — MT3608 DC-DC Step-Up Regulator Datasheet
+- 📄 [`Lipo Battery.pdf`](./Components%20Datasheet/Lipo%20Battery.pdf) — 3.7V Lithium-Polymer Battery Specifications
+- 📄 [`Buzzer.pdf`](./Components%20Datasheet/Buzzer.pdf) — 5V Active Piezoelectric Buzzer Datasheet
 
 ---
 
