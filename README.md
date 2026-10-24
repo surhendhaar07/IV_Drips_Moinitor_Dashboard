@@ -149,13 +149,13 @@ graph TD
         Battery -->|Voltage Divider| ESP_A0["ESP8266 ADC0 (A0)"]
         ESP -->|PWM D4| Servo["SG90 Micro Servo (Tube Clamp)"]
         ESP -->|Digital Out D6| Buzzer["Active 5V Buzzer"]
-        ESP -->|I2C D1/D2| OLED["SSD1306 0.96\" OLED Display"]
+        ESP -->|I2C D1/D2| OLED["SSD1306 0.96-inch OLED Display"]
     end
 
     subgraph Cloud_Infrastructure ["Google Firebase Cloud"]
-        ESP -- "Telemetry PATCH every 2s" --> RTDB[("Firebase Realtime Database")]
-        ESP -- "Incident Logs" --> RTDB_Alerts["/alerts/"]
-        RTDB -- "Remote Servo Command" --> ESP
+        ESP -->|Telemetry PATCH every 2s| RTDB[("Firebase Realtime Database")]
+        ESP -->|Incident Logs| RTDB_Alerts["/alerts/"]
+        RTDB -->|Remote Servo Command| ESP
     end
 
     subgraph Central_Station ["Hospital Central Dashboard (React 19 + Vite)"]
@@ -178,11 +178,11 @@ The system is designed with accessible, off-the-shelf commercial components to e
 | :--- | :--- | :--- | :--- | :--- |
 | **Microcontroller** | ESP8266 | Core controller, Wi-Fi telemetry & logic | ₹300 | [ESP 8266.pdf](./Components%20Datasheet/ESP%208266.pdf) |
 | **Liquid Level Sensor** | XKC-Y26-V Non-Contact Sensor | Non-invasive capacitive saline detection | ₹450 | [XKC-Y26-V.pdf](./Components%20Datasheet/XKC-Y26-V-DC%205-24V%20Non-Contact%20Liquid%20Level%20Sensor.pdf) |
-| **Actuator** | SG90 Micro Servo Motor | Mechanical gentle IV tubing clamp | ₹130 | — |
+| **Actuator** | SG90 Micro Servo Motor | Mechanical gentle IV tubing clamp | ₹130 | [Servo_motor_sg90.pdf](./Components%20Datasheet/Servo_motor_sg90.pdf) |
 | **Display** | 0.96" SSD1306 I2C OLED | Bedside display (Battery, State, Flow) | ₹220 | [OLED Display.pdf](./Components%20Datasheet/OLED%20Display.pdf) |
 | **Acoustic Indicator**| 5V Active Buzzer | Local critical audible alarm | ₹25 | [Buzzer.pdf](./Components%20Datasheet/Buzzer.pdf) |
 | **Rechargeable Battery**| 3.7V Li-ion / LiPo (1200mAh) | Portable un-tethered bedside power | ₹250 | [Lipo Battery.pdf](./Components%20Datasheet/Lipo%20Battery.pdf) |
-| **Charging Module** | TP4056 with Protection | Micro-USB / Type-C battery charging | ₹45 | — |
+| **Charging Module** | TP4056 with Protection | Micro-USB / Type-C battery charging | ₹45 | [TP4056.pdf](./Components%20Datasheet/TP4056.pdf) |
 | **Voltage Regulator**| MT3608 DC-DC Step-Up | Steps up 3.7V LiPo to stable 5.0V | ₹50 | [buck booster.pdf](./Components%20Datasheet/buck%20booster.pdf) |
 | **Enclosure & Wiring**| 2-Way Switch, PCB, Jumper Wires, 3D Mount | Circuit housing & tube clamp structure | ₹150 – ₹300 | — |
 | **Total Estimated Cost** | — | **Fully Functional Smart IoT Node** | **₹1,620 – ₹2,000 / unit** | [All Datasheets](./Components%20Datasheet/) |
@@ -191,7 +191,9 @@ The system is designed with accessible, off-the-shelf commercial components to e
 All hardware component datasheets and manufacturer specifications are archived in [`Components Datasheet/`](./Components%20Datasheet/):
 - 📄 [`ESP 8266.pdf`](./Components%20Datasheet/ESP%208266.pdf) — ESP8266 Wi-Fi Microcontroller Datasheet
 - 📄 [`XKC-Y26-V-DC 5-24V Non-Contact Liquid Level Sensor.pdf`](./Components%20Datasheet/XKC-Y26-V-DC%205-24V%20Non-Contact%20Liquid%20Level%20Sensor.pdf) — Non-Contact Saline Level Sensor Specifications
+- 📄 [`Servo_motor_sg90.pdf`](./Components%20Datasheet/Servo_motor_sg90.pdf) — SG90 9g Micro Servo Motor Technical Manual
 - 📄 [`OLED Display.pdf`](./Components%20Datasheet/OLED%20Display.pdf) — 0.96" SSD1306 I2C OLED Module Technical Manual
+- 📄 [`TP4056.pdf`](./Components%20Datasheet/TP4056.pdf) — TP4056 1A Standalone Linear Li-lon Battery Charger Datasheet
 - 📄 [`buck booster.pdf`](./Components%20Datasheet/buck%20booster.pdf) — MT3608 DC-DC Step-Up Regulator Datasheet
 - 📄 [`Lipo Battery.pdf`](./Components%20Datasheet/Lipo%20Battery.pdf) — 3.7V Lithium-Polymer Battery Specifications
 - 📄 [`Buzzer.pdf`](./Components%20Datasheet/Buzzer.pdf) — 5V Active Piezoelectric Buzzer Datasheet
