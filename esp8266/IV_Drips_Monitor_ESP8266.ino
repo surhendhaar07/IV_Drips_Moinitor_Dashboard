@@ -12,8 +12,6 @@
 
 // ===== Firebase Libraries =====
 #include <FirebaseESP8266.h>
-
-// Single FirebaseData object (keeps RAM usage low and avoids SSL socket exhaustion)
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
@@ -24,52 +22,45 @@ FirebaseConfig config;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 // ===== Pin Config =====
-const byte SensePin  = D5;   // XKC-Y25 Liquid Sensor (HIGH: Liquid Present, LOW: Empty)
+const byte SensePin  = D5;   // XKC-Y25 Liquid Sensor
 const byte BuzzerPin = D6;   // Active Buzzer
-const byte ServoPin  = D4;   // SG90 Micro Servo (D4 / GPIO 2)
 const byte SDA_PIN   = D1;   // OLED SDA
 const byte SCL_PIN   = D2;   // OLED SCL
 
 // ===== Servo Setup =====
 Servo myServo;
-bool manualClamped = false; // Commanded via Web Dashboard (Doctor/Nurse)
-bool autoClamped   = false; // Triggered by 60s empty liquid timer
+bool manualClamped = false; // Doctor commanded via Web Dashboard
+bool autoClamped   = false; // Triggered by fluid empty timer
+String lastServoCmd = "";
 
 // ===== Servo Timing =====
 unsigned long noLiquidStartTime = 0;
 bool timerStarted = false;
-const unsigned long CLAMP_DELAY = 60000; // 60 seconds latch delay (change to 5000 for quick bench test)
+const unsigned long CLAMP_DELAY = 60000; // 60000 for 1 minute
 
 // ===== Wi-Fi Credentials =====
-// IMPORTANT: If using Windows Laptop Hotspot, ensure 'Network band' is set to 2.4 GHz (ESP8266 does not support 5 GHz)
 char ssid[] = "LAPTOP-SIJFUAAV 3156";
 char pass[] = "priiyaa3";
 
-// ===== Firebase RTDB Credentials =====
-// Target Database: https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com/
-#define FIREBASE_HOST "iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com"
-#define FIREBASE_AUTH "iRYSiGLJNU884wdLmOskwnNttTd36r8tp6rfFycb"
-#define DATABASE_URL  "https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com"
+// ===== Firebase Credentials =====
+#define DATABASE_URL "https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com"
+#define DATABASE_SECRET "iRYSiGLJNU884wdLmOskwnNttTd36r8tp6rfFycb"
 
 // ===== DEVICE ID =====
-String deviceId = "IV-DEVICE-001"; // Set to IV-DEVICE-001, IV-DEVICE-002, etc.
+String deviceId = "IV-DEVICE-001";
 
 // ===== Timing ===== 
 bool buzzerState = LOW;
 unsigned long previousFlip = 0;
-const unsigned long PERIOD = 250; // 250ms buzzer beep interval
-
+const unsigned long PERIOD = 250;
 unsigned long lastAlertTime = 0;
-const unsigned long ALERT_INTERVAL = 60000; // 60s alert throttle to prevent Firebase flooding
-bool emptyAlertLogged = false;
+const unsigned long ALERT_INTERVAL = 60000;
 
-// Cloud Sync Timer (Every 2 seconds to keep Web Dashboard LIVE)
+// Cloud Sync Timer (Every 2 seconds)
 unsigned long lastSyncTime = 0;
-const unsigned long SYNC_INTERVAL = 2000;
+const unsigned long SYNC_INTERVAL = 1000;
 
-// =========================================================================
-// SETUP
-// =========================================================================
+// ===== Setup =====
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -82,7 +73,7 @@ void setup() {
   digitalWrite(BuzzerPin, LOW);
 
   // ===== SERVO INIT =====
-  myServo.attach(ServoPin);
+  myServo.attach(D4);
   myServo.write(120);   // Default: OPEN (120°)
   Serial.println(">>> [2/4] Servo initialized at 120 deg (OPEN)");
 
@@ -94,23 +85,18 @@ void setup() {
     display.setTextSize(1);
     display.setCursor(0, 10);
     display.println("Connecting WiFi...");
-    display.setCursor(0, 25);
-    display.println(ssid);
     display.display();
   }
 
   // ===== WIFI =====
   WiFi.mode(WIFI_STA);
-  WiFi.setAutoReconnect(true);
-  WiFi.persistent(true);
   WiFi.begin(ssid, pass);
   Serial.print(">>> Connecting to WiFi: ");
   Serial.println(ssid);
   
-  // Wait up to 25 seconds for Wi-Fi / Hotspot connection
   int wifiTimeout = 0;
-  while (WiFi.status() != WL_CONNECTED && wifiTimeout < 50) {
-    delay(500);
+  while (WiFi.status() != WL_CONNECTED && wifiTimeout < 30) {
+    delay(400);
     Serial.print(".");
     wifiTimeout++;
   }
@@ -118,50 +104,36 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n>>> [3/4] WiFi Connected! IP: " + WiFi.localIP().toString());
   } else {
-    Serial.println("\n>>> [WARNING] WiFi connecting in background. Ensure hotspot band is 2.4 GHz!");
+    Serial.println("\n>>> [WARNING] WiFi connecting in background...");
   }
 
   // ===== BLYNK (Non-blocking) =====
   Blynk.config(BLYNK_AUTH_TOKEN);
-  Blynk.connect(2000);
-  Serial.println(">>> Blynk configured.");
+  Blynk.connect(3000);
+  Serial.println(">>> [4/4] Blynk configured.");
 
-  // ===== FIREBASE CONFIG (Clean Database Secret / Legacy Token Authentication) =====
-  // NOTE: When using Database Secret, we MUST NOT set config.api_key or config.signer.test_mode.
-  // Setting api_key makes the library attempt Google OAuth token exchange which fails with a secret token!
+  // ===== FIREBASE CONFIG =====
   config.database_url = DATABASE_URL;
-  config.signer.tokens.legacy_token = FIREBASE_AUTH;
+  config.signer.tokens.legacy_token = DATABASE_SECRET;
 
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
   fbdo.setResponseSize(1024);
-  fbdo.setBSSLBufferSize(1024, 512);
 
-  Serial.println(">>> [4/4] Testing Firebase RTDB connection...");
-  fbdo.clear();
-  if (Firebase.getString(fbdo, "/devices/" + deviceId + "/servoCommand")) {
-    Serial.println(">>> [SUCCESS] Firebase RTDB Connected & Initialized!");
-  } else {
-    Serial.print(">>> [NOTICE] Firebase connect note: ");
-    Serial.println(fbdo.errorReason());
-  }
-
-  Serial.println(">>> Entering Main Telemetry Loop...\n");
+  Serial.println(">>> Firebase Initialized with Database Secret!");
+  Serial.println(">>> Entering Main Loop...\n");
 }
 
-// =========================================================================
-// MAIN LOOP
-// =========================================================================
+// ===== LOOP =====
 void loop() {
   if (Blynk.connected()) {
     Blynk.run();
   }
-  yield();
 
   bool liquidPresent = (digitalRead(SensePin) == HIGH);
   bool isClamped = (manualClamped || autoClamped);
 
-  // ===== AUTO-CLAMP SAFETY LOGIC =====
+  // ===== AUTO-CLAMP SAFETY LOGIC (Only runs if NOT manually clamped by Doctor) =====
   if (!liquidPresent && !isClamped) {
     if (!timerStarted) {
       noLiquidStartTime = millis();
@@ -169,7 +141,7 @@ void loop() {
       Serial.println("[TIMER] Fluid empty! Auto-clamp timer started...");
     }
 
-    // Auto-clamp when 60s timer expires
+    // Auto-clamp when timer expires
     if (millis() - noLiquidStartTime >= CLAMP_DELAY) {
       myServo.write(90);   // CLAMP (90°)
       autoClamped = true;
@@ -184,12 +156,8 @@ void loop() {
   int batteryPercent = map(raw, 600, 1023, 0, 100);
   batteryPercent = constrain(batteryPercent, 0, 100);
 
-  String status = "normal";
-  if (!liquidPresent) {
-    status = "empty";
-  } else if (batteryPercent < 20) {
-    status = "low";
-  }
+  String status = liquidPresent ? "normal" : "empty";
+  if (!liquidPresent && batteryPercent < 20) status = "low";
 
   // ===== OLED & BUZZER HANDLING =====
   display.clearDisplay();
@@ -208,12 +176,11 @@ void loop() {
     display.println("Detected");
     digitalWrite(BuzzerPin, LOW);
 
-    // Auto-open only if auto-clamped by empty bottle, NOT if manually clamped by Doctor
+    // Only auto-open if it was auto-clamped by empty bottle, NOT if manually clamped by Doctor!
     if (autoClamped && !manualClamped) {
       myServo.write(120);
       autoClamped = false;
       timerStarted = false;
-      emptyAlertLogged = false;
       Serial.println("[SERVO] Liquid restored. Auto-clamped valve reopened to 120 deg.");
     }
   } else {
@@ -227,10 +194,10 @@ void loop() {
       buzzerState = !buzzerState;
       digitalWrite(BuzzerPin, buzzerState);
     } else if (isClamped) {
-      digitalWrite(BuzzerPin, LOW);
+      digitalWrite(BuzzerPin, LOW); // Silence buzzer once clamped
     }
 
-    // Alert push to Blynk
+    // Alert push
     if (millis() - lastAlertTime > ALERT_INTERVAL) {
       if (Blynk.connected()) {
         Blynk.logEvent("iv_drip_alert", "IV Bag EMPTY! Check immediately.");
@@ -250,93 +217,61 @@ void loop() {
     display.print("OPEN");
   }
   display.display();
-  yield();
 
-  // ===== SYNC TO BLYNK & FIREBASE (Every 2 Seconds) =====
+  // ===== SYNC TO BLYNK & FIREBASE EVERY 2 SECONDS =====
   if (millis() - lastSyncTime >= SYNC_INTERVAL) {
     lastSyncTime = millis();
 
-    if (WiFi.status() == WL_CONNECTED) {
-      // 1. Check for Remote Commands from Web Dashboard (Doctor/Nurse clicked Toggle Clamp)
-      fbdo.clear();
-      if (Firebase.getString(fbdo, "/devices/" + deviceId + "/servoCommand")) {
-        String cmd = fbdo.stringData();
-        cmd.trim();
-        if (cmd == "CLAMP" && !autoClamped && !manualClamped) {
+    // 1. Check for Remote Commands from Web Dashboard (Doctor clicked Clamp/Open)
+    if (Firebase.getString(fbdo, "/devices/" + deviceId + "/servoCommand")) {
+      String cmd = fbdo.stringData();
+      if (cmd != lastServoCmd && cmd != "") {
+        lastServoCmd = cmd;
+        if (cmd == "CLAMP") {
           manualClamped = true;
-          myServo.write(90);
+          myServo.write(90); // Physically turn servo to 90°
           Serial.println(">>> [REMOTE] Dashboard commanded CLAMP! Servo set to 90 deg. <<<");
-        } else if (cmd == "OPEN" && (manualClamped || autoClamped)) {
+        } else if (cmd == "OPEN") {
           manualClamped = false;
           autoClamped   = false;
           timerStarted  = false;
-          myServo.write(120);
+          myServo.write(120); // Physically turn servo to 120°
           Serial.println(">>> [REMOTE] Dashboard commanded OPEN! Servo set to 120 deg. <<<");
         }
       }
-      yield();
+    }
 
-      isClamped = (manualClamped || autoClamped);
-      String flow = isClamped ? "clamped" : (!liquidPresent ? "waiting" : "open");
+    // Recalculate clamped state after checking remote command
+    isClamped = (manualClamped || autoClamped);
 
-      // 2. Batched Firebase RTDB Update (Only essential variables from the analyzed code)
-      String jsonPayload = "{\"level\":" + String(liquidPresent ? 100 : 0) +
-                           ",\"battery\":" + String(batteryPercent) +
-                           ",\"status\":\"" + status + "\"" +
-                           ",\"flowStatus\":\"" + flow + "\"" +
-                           ",\"lastSeen\":" + String(millis()) + "}";
+    // 2. Determine Flow Status string for Web Dashboard & Firebase
+    String flow = isClamped ? "clamped" : (!liquidPresent ? "waiting" : "open");
 
-      FirebaseJson telemetry;
-      telemetry.setJsonData(jsonPayload);
+    // 3. Blynk Virtual Pins
+    if (Blynk.connected()) {
+      Blynk.virtualWrite(V0, batteryPercent);
+      Blynk.virtualWrite(V1, liquidPresent ? 1 : 0);
+    }
 
-      fbdo.clear();
-      if (Firebase.updateNode(fbdo, "/devices/" + deviceId, telemetry)) {
-        Serial.print("[FIREBASE SUCCESS] flowStatus=");
-        Serial.print(flow);
-        Serial.print(" | level=");
-        Serial.print(liquidPresent ? 100 : 0);
-        Serial.print(" | battery=");
-        Serial.print(batteryPercent);
-        Serial.print("% | lastSeen=");
-        Serial.println(millis());
-      } else {
-        Serial.print("[FIREBASE ERROR] Reason: ");
-        Serial.println(fbdo.errorReason());
-      }
-      yield();
+    // 4. Batched Firebase RTDB Update
+    FirebaseJson telemetry;
+    telemetry.set("level", liquidPresent ? 100 : 0);
+    telemetry.set("battery", batteryPercent);
+    telemetry.set("status", status);
+    telemetry.set("flowStatus", flow);
+    telemetry.set("lastSeen", (double)millis());
 
-      // 3. Blynk Virtual Pins
-      if (Blynk.connected()) {
-        Blynk.virtualWrite(V0, batteryPercent);
-        Blynk.virtualWrite(V1, liquidPresent ? 1 : 0);
-      }
-
-      // 4. Emergency Alert Logging to Firebase /alerts/ (Once per empty cycle, throttled)
-      if (!liquidPresent) {
-        if (!emptyAlertLogged || (millis() - lastAlertTime > ALERT_INTERVAL)) {
-          emptyAlertLogged = true;
-          lastAlertTime = millis();
-          String alertPath = "/alerts/" + String(millis());
-
-          String alertPayload = "{\"type\":\"empty\"" +
-                                String(",\"deviceId\":\"") + deviceId + "\"" +
-                                String(",\"level\":0") +
-                                String(",\"battery\":") + String(batteryPercent) +
-                                String(",\"timestamp\":") + String(millis()) +
-                                String(",\"acknowledged\":false}");
-
-          FirebaseJson alertJson;
-          alertJson.setJsonData(alertPayload);
-
-          fbdo.clear();
-          Firebase.set(fbdo, alertPath, alertJson);
-          Serial.println(">>> [ALERT LOGGED] Emergency LINE EMPTY written to Firebase /alerts/ <<<");
-        }
-      } else {
-        emptyAlertLogged = false;
-      }
+    if (Firebase.updateNode(fbdo, "/devices/" + deviceId, telemetry)) {
+      Serial.print("[FIREBASE SUCCESS] flowStatus=");
+      Serial.print(flow);
+      Serial.print(", lastSeen=");
+      Serial.println(millis());
+    } else {
+      Serial.print("[FIREBASE ERROR] Reason: ");
+      Serial.println(fbdo.errorReason());
     }
   }
 
   delay(20);
 }
+
