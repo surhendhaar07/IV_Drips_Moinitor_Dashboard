@@ -10,7 +10,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Realtime_Database-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WebAssembly-003B57?logo=sqlite&logoColor=white)](https://sql.js.org/)
 [![ESP8266](https://img.shields.io/badge/Hardware-ESP8266-E7352C?logo=espressif&logoColor=white)](https://www.espressif.com/)
-[![Prototype Cost](https://img.shields.io/badge/Prototype_Cost-₹1%2C620_--_₹2%2C000_Rs-brightgreen)](#-bill-of-materials--prototype-cost)
+[![Prototype Cost](https://img.shields.io/badge/Prototype_Cost-₹1%2C950-brightgreen)](#-bill-of-materials--prototype-cost)
 
 ---
 
@@ -174,18 +174,19 @@ graph TD
 
 The system is designed with accessible, off-the-shelf commercial components to ensure maximum affordability for rural and low-resource healthcare institutions:
 
-| Component | Specification / Model | Purpose | Estimated Unit Cost (INR) | Datasheet |
-| :--- | :--- | :--- | :--- | :--- |
-| **Microcontroller** | ESP8266 | Core controller, Wi-Fi telemetry & logic | ₹300 | [ESP 8266.pdf](./Components%20Datasheet/ESP%208266.pdf) |
-| **Liquid Level Sensor** | XKC-Y26-V Non-Contact Sensor | Non-invasive capacitive saline detection | ₹450 | [XKC-Y26-V.pdf](./Components%20Datasheet/XKC-Y26-V-DC%205-24V%20Non-Contact%20Liquid%20Level%20Sensor.pdf) |
-| **Actuator** | SG90 Micro Servo Motor | Mechanical gentle IV tubing clamp | ₹130 | [Servo_motor_sg90.pdf](./Components%20Datasheet/Servo_motor_sg90.pdf) |
-| **Display** | 0.96" SSD1306 I2C OLED | Bedside display (Battery, State, Flow) | ₹220 | [OLED Display.pdf](./Components%20Datasheet/OLED%20Display.pdf) |
-| **Acoustic Indicator**| 5V Active Buzzer | Local critical audible alarm | ₹25 | [Buzzer.pdf](./Components%20Datasheet/Buzzer.pdf) |
-| **Rechargeable Battery**| 3.7V Li-ion / LiPo (1200mAh) | Portable un-tethered bedside power | ₹250 | [Lipo Battery.pdf](./Components%20Datasheet/Lipo%20Battery.pdf) |
-| **Charging Module** | TP4056 with Protection | Micro-USB / Type-C battery charging | ₹45 | [TP4056.pdf](./Components%20Datasheet/TP4056.pdf) |
-| **Voltage Regulator**| MT3608 DC-DC Step-Up | Steps up 3.7V LiPo to stable 5.0V | ₹50 | [buck booster.pdf](./Components%20Datasheet/buck%20booster.pdf) |
-| **Enclosure & Wiring**| 2-Way Switch, PCB, Jumper Wires, 3D Mount | Circuit housing & tube clamp structure | ₹150 – ₹300 | — |
-| **Total Estimated Cost** | — | **Fully Functional Smart IoT Node** | **₹1,620 – ₹2,000 / unit** | [All Datasheets](./Components%20Datasheet/) |
+| Component | Part / Specification | Qty. | Price | Datasheet / CAD Asset |
+| :--- | :--- | :---: | :---: | :--- |
+| **Microcontroller** | ESP8266 development board | 1 | ₹ 300 | [ESP 8266.pdf](./Components%20Datasheet/ESP%208266.pdf) |
+| **Liquid-level sensor** | XKC-Y26-V, non-contact | 1 | ₹ 750 | [XKC-Y26-V.pdf](./Components%20Datasheet/XKC-Y26-V-DC%205-24V%20Non-Contact%20Liquid%20Level%20Sensor.pdf) |
+| **Servo motor** | Micro servo motor | 1 | ₹ 150 | [Servo_motor_sg90.pdf](./Components%20Datasheet/Servo_motor_sg90.pdf) |
+| **Audible alert** | 5V buzzer | 1 | ₹ 20 | [Buzzer.pdf](./Components%20Datasheet/Buzzer.pdf) |
+| **Display** | SSD1306 OLED | 1 | ₹ 200 | [OLED Display.pdf](./Components%20Datasheet/OLED%20Display.pdf) |
+| **Rechargeable battery** | 3.7V LiPo cell | 2 | ₹ 200 | [Lipo Battery.pdf](./Components%20Datasheet/Lipo%20Battery.pdf) |
+| **Charging module** | TP4056 | 1 | ₹ 30 | [TP4056.pdf](./Components%20Datasheet/TP4056.pdf) |
+| **Voltage Regulator** | MT3608 DC-DC Step-Up | 1 | ₹ 100 | [buck booster.pdf](./Components%20Datasheet/buck%20booster.pdf) |
+| **Mechanical enclosure** | Custom 3D-printed housing | 1 | ₹ 150 | [Enclosure Box.stl](./CAD%20Designs/Enclosure%20Box.stl) |
+| **IV tube pinching part** | Servo arm and custom mechanism | 1 | ₹ 50 | [Clamp.stl](./CAD%20Designs/Clamp.stl) |
+| **Total** | — | — | **₹ 1950** | [All Datasheets](./Components%20Datasheet/) |
 
 ### 📂 Components Datasheet Directory
 All hardware component datasheets and manufacturer specifications are archived in [`Components Datasheet/`](./Components%20Datasheet/):
