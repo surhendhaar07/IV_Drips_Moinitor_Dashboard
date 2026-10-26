@@ -22,7 +22,7 @@ This web application is a Hospital Management & Telemetry Dashboard for IV Drip 
 ## 3. Firebase Realtime Database Synchronization Schema
 
 The dashboard connects directly to your Firebase Realtime Database at:
-`https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com/`
+`https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/`
 
 ### Path: `/devices/{deviceId}`
 All patient details, room, bed, and hardware assignments are **strictly preserved** in Firebase. The ESP8266 firmware updates **only the dynamic telemetry keys** using `Firebase.updateNode` (PATCH):

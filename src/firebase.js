@@ -25,13 +25,13 @@ try {
 } catch (e) {}
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyB9dzuwu5hOC2taDzYZlNKKOmaOJGQkWFY",
-  authDomain: "iv-drips-monitor-8-e6682.firebaseapp.com",
-  databaseURL: "https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com",
-  projectId: "iv-drips-monitor-8-e6682",
-  storageBucket: "iv-drips-monitor-8-e6682.appspot.com",
-  messagingSenderId: "109823456789",
-  appId: "1:109823456789:web:9f8a7b6c5d4e3f2a1b"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
 };
 
 let app;
@@ -39,13 +39,17 @@ let database;
 let auth;
 
 try {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
+  if (firebaseConfig.apiKey && firebaseConfig.databaseURL) {
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApps()[0];
+    }
+    database = getDatabase(app);
+    auth = getAuth(app);
   } else {
-    app = getApps()[0];
+    console.warn("Firebase configuration is missing or incomplete. Please verify your .env file.");
   }
-  database = getDatabase(app);
-  auth = getAuth(app);
 } catch (err) {
   console.warn("Firebase initialization note:", err.message);
 }

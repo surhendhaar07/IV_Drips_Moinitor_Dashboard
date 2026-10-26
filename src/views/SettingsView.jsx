@@ -35,7 +35,7 @@ export default function SettingsView() {
 
   // Firebase Config
   const [firebaseDbUrl, setFirebaseDbUrl] = useState(() => {
-    return localStorage.getItem('iv_custom_rtdb_url') || 'https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com';
+    return localStorage.getItem('iv_custom_rtdb_url') || import.meta.env.VITE_FIREBASE_DATABASE_URL || '';
   });
 
   const handleTestSound = () => {

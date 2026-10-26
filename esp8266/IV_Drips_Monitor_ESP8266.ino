@@ -39,12 +39,12 @@ bool timerStarted = false;
 const unsigned long CLAMP_DELAY = 60000; // 60000 for 1 minute
 
 // ===== Wi-Fi Credentials =====
-char ssid[] = "LAPTOP-SIJFUAAV 3156";
-char pass[] = "priiyaa3";
+char ssid[] = "YOUR_WIFI_SSID";
+char pass[] = "YOUR_WIFI_PASSWORD";
 
 // ===== Firebase Credentials =====
-#define DATABASE_URL "https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com"
-#define DATABASE_SECRET "iRYSiGLJNU884wdLmOskwnNttTd36r8tp6rfFycb"
+#define DATABASE_URL "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
+#define DATABASE_SECRET "YOUR_DATABASE_SECRET"
 
 // ===== DEVICE ID =====
 String deviceId = "IV-DEVICE-001";

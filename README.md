@@ -398,7 +398,7 @@ The platform provides role-based credentials for immediate testing:
    ```cpp
    #define WIFI_SSID "YOUR_WIFI_SSID"
    #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-   #define FIREBASE_HOST "iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com"
+   #define FIREBASE_HOST "YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
    #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
    ```
 4. Under **Tools → Board**, select your **ESP8266** board and flash the firmware.
