@@ -14,6 +14,7 @@ import NotificationBellModal from './components/NotificationBellModal';
 import AddDeviceModal from './components/AddDeviceModal';
 import EditDeviceModal from './components/EditDeviceModal';
 import AssignPatientModal from './components/AssignPatientModal';
+import DemoSimulationBanner from './components/DemoSimulationBanner';
 import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
 
 function MainApp() {
@@ -50,6 +51,9 @@ function MainApp() {
 
       {/* Main Content Area */}
       <div className="main-content">
+        {/* Doctor Demo Simulation Mode Banner */}
+        <DemoSimulationBanner />
+
         {/* Top Navbar */}
         <Navbar onOpenMobile={() => setMobileSidebarOpen(true)} />
 

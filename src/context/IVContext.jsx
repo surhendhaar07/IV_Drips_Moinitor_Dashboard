@@ -11,6 +11,7 @@ import {
 } from '../firebase';
 import { soundService } from '../services/soundService';
 import { sqliteService, DEFAULT_PATIENTS, DEFAULT_ROOMS, DEFAULT_HARDWARE } from '../services/sqliteService';
+import { demoSimulationService, DEMO_DOCTOR_PROFILE } from '../services/demoSimulationService';
 
 const IVContext = createContext(null);
 
@@ -28,11 +29,40 @@ export function IVProvider({ children }) {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Doctor Demo Simulation State (completely isolated from Firebase)
+  const [isDemoMode, setIsDemoMode] = useState(() => demoSimulationService.isDemoModeActive());
+  const [demoDevices, setDemoDevices] = useState(() => demoSimulationService.getDemoDevices());
+  const [demoAlerts, setDemoAlerts] = useState([]);
+
   const logout = () => {
+    if (isDemoMode) {
+      demoSimulationService.stopDemo();
+      setIsDemoMode(false);
+      setDemoDevices([]);
+      setDemoAlerts([]);
+    }
     localStorage.removeItem('iv_logged_in');
     localStorage.removeItem('iv_user');
+    localStorage.removeItem('iv_demo_simulation_active');
     setCurrentUser(null);
   };
+
+  const startDemoMode = useCallback(() => {
+    demoSimulationService.startDemo();
+    setIsDemoMode(true);
+    setCurrentUser(DEMO_DOCTOR_PROFILE);
+    localStorage.setItem('iv_user', JSON.stringify(DEMO_DOCTOR_PROFILE));
+    localStorage.setItem('iv_logged_in', 'true');
+  }, []);
+
+  const exitDemoMode = useCallback(() => {
+    demoSimulationService.stopDemo();
+    setIsDemoMode(false);
+    setDemoDevices([]);
+    setDemoAlerts([]);
+    soundService.stopAlarm();
+    logout();
+  }, []);
 
   // Devices state: strictly populated directly from Firebase Realtime Database
   const [devices, setDevices] = useState(() => {
@@ -108,19 +138,50 @@ export function IVProvider({ children }) {
     }, 4500);
   }, [notificationsConfig.toast]);
 
-  // Browser Notification helper
-  const triggerBrowserNotification = useCallback((title, body) => {
-    if (notificationsConfig.browser && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(title, {
-          body,
-          icon: '/favicon.svg'
-        });
-      } catch (e) {
-        console.warn('Browser notification error:', e);
-      }
+  // Subscribe to isolated demo simulation stream when demo mode is active
+  useEffect(() => {
+    if (!isDemoMode) {
+      setDemoDevices([]);
+      return;
     }
-  }, [notificationsConfig.browser]);
+
+    const unsubDev = demoSimulationService.subscribe((devs) => {
+      setDemoDevices([...devs]);
+    });
+
+    const unsubNotif = demoSimulationService.onNotification((title, message, type) => {
+      addToast(title, message, type);
+      if (type === 'critical') {
+        soundService.startAlarm();
+        setTimeout(() => soundService.stopAlarm(), 3200);
+      }
+    });
+
+    const unsubAlert = demoSimulationService.onAlert((alertObj) => {
+      setDemoAlerts(prev => [alertObj, ...prev]);
+    });
+
+    return () => {
+      unsubDev();
+      unsubNotif();
+      unsubAlert();
+    };
+  }, [isDemoMode, addToast]);
+
+  // Combine real devices with simulated devices when in Demo Mode
+  const allDevices = useMemo(() => {
+    if (isDemoMode && demoDevices.length > 0) {
+      return [...demoDevices, ...devices];
+    }
+    return devices;
+  }, [devices, demoDevices, isDemoMode]);
+
+  const allAlerts = useMemo(() => {
+    if (isDemoMode && demoAlerts.length > 0) {
+      return [...demoAlerts, ...alerts];
+    }
+    return alerts;
+  }, [alerts, demoAlerts, isDemoMode]);
 
   // Visible devices based on logged in user's role:
   // Nurses only see devices where the patient is assigned to them!
@@ -130,7 +191,7 @@ export function IVProvider({ children }) {
       const uname = (currentUser.username || '').trim().toLowerCase();
       const name = (currentUser.name || '').trim().toLowerCase();
       const uid = (currentUser.id || '').trim().toLowerCase();
-      return devices.filter(d => {
+      return allDevices.filter(d => {
         const assigned = (d.assignedNurse || d.patient?.assignedNurse || '').trim().toLowerCase().replace(/^@/, '');
         const assignedName = (d.assignedNurseName || d.patient?.assignedNurseName || '').trim().toLowerCase();
         return (
@@ -141,8 +202,8 @@ export function IVProvider({ children }) {
         );
       });
     }
-    return devices;
-  }, [devices, currentUser]);
+    return allDevices;
+  }, [allDevices, currentUser]);
 
   // Visible alerts based on role:
   // Nurses only see and receive alerts for their assigned devices/patients!
@@ -151,7 +212,7 @@ export function IVProvider({ children }) {
       const visibleDeviceIds = new Set(visibleDevices.map(d => d.id));
       const uname = (currentUser.username || '').trim().toLowerCase();
       const name = (currentUser.name || '').trim().toLowerCase();
-      return alerts.filter(a => {
+      return allAlerts.filter(a => {
         if (a.deviceId && visibleDeviceIds.has(a.deviceId)) return true;
         if (a.assignedNurse) {
           const assigned = a.assignedNurse.trim().toLowerCase().replace(/^@/, '');
@@ -164,8 +225,8 @@ export function IVProvider({ children }) {
         return false;
       });
     }
-    return alerts;
-  }, [alerts, visibleDevices, currentUser]);
+    return allAlerts;
+  }, [allAlerts, visibleDevices, currentUser]);
 
   // Check for critical unacknowledged alerts to sound alarm:
   // For nurses, alarm sounds ONLY for their assigned patients!
@@ -432,12 +493,20 @@ export function IVProvider({ children }) {
   };
 
   const acknowledgeAlert = async (alertId) => {
+    if (isDemoMode && demoAlerts.some(a => a.id === alertId)) {
+      setDemoAlerts(prev => prev.map(a => a.id === alertId ? { ...a, acknowledged: true } : a));
+      soundService.stopAlarm();
+      return;
+    }
     setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, acknowledged: true } : a));
     await updateFirebaseAlert(alertId, { acknowledged: true });
     addToast('Alarm Acknowledged', 'Alert has been silenced and marked resolved.', 'info');
   };
 
   const acknowledgeAllAlerts = async () => {
+    if (isDemoMode) {
+      setDemoAlerts(prev => prev.map(a => ({ ...a, acknowledged: true })));
+    }
     setAlerts(prev => prev.map(a => ({ ...a, acknowledged: true })));
     soundService.stopAlarm();
     for (const a of alerts) {
@@ -449,6 +518,9 @@ export function IVProvider({ children }) {
   };
 
   const clearAllAlerts = async () => {
+    if (isDemoMode) {
+      setDemoAlerts([]);
+    }
     setAlerts([]);
     localStorage.removeItem('iv_alerts');
     soundService.stopAlarm();
@@ -457,6 +529,14 @@ export function IVProvider({ children }) {
   };
 
   const toggleClamp = async (deviceId) => {
+    // If it's an isolated simulated demo device, route to demo simulation service
+    if (isDemoMode && demoDevices.some(d => d.id === deviceId)) {
+      const dev = demoDevices.find(d => d.id === deviceId);
+      const newCmd = dev.flowStatus === 'clamped' ? 'OPEN' : 'CLAMP';
+      demoSimulationService.handleServoCommand(deviceId, newCmd);
+      return;
+    }
+
     const dev = devices.find(d => d.id === deviceId);
     if (!dev) return;
 
@@ -863,8 +943,8 @@ export function IVProvider({ children }) {
 
   // Selected device object
   const selectedDevice = useMemo(() => {
-    return devices.find(d => d.id === selectedDeviceId) || null;
-  }, [devices, selectedDeviceId]);
+    return allDevices.find(d => d.id === selectedDeviceId) || null;
+  }, [allDevices, selectedDeviceId]);
 
   // Filtered devices (based on visibleDevices for role security)
   const filteredDevices = useMemo(() => {
@@ -931,6 +1011,10 @@ export function IVProvider({ children }) {
       addToast,
       notificationsConfig,
       setNotificationsConfig,
+      // Demo Simulation controls
+      isDemoMode,
+      startDemoMode,
+      exitDemoMode,
       // actions
       acknowledgeAlert,
       acknowledgeAllAlerts,

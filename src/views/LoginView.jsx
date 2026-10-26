@@ -17,7 +17,7 @@ import { useIV } from '../context/IVContext';
 import { sqliteService } from '../services/sqliteService';
 
 export default function LoginView({ onLoginSuccess }) {
-  const { setCurrentUser, addToast } = useIV();
+  const { setCurrentUser, addToast, startDemoMode } = useIV();
   const [usernameInput, setUsernameInput] = useState('doctor');
   const [password, setPassword] = useState('password123');
   const [showPassword, setShowPassword] = useState(false);
@@ -62,6 +62,18 @@ export default function LoginView({ onLoginSuccess }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLaunchDoctorDemo = () => {
+    startDemoMode();
+    if (addToast) {
+      addToast(
+        'Doctor Live Simulation Started',
+        'Simulating Dr. Alex Chen with autonomous bedside telemetry & low fluid warnings.',
+        'success'
+      );
+    }
+    if (onLoginSuccess) onLoginSuccess();
   };
 
   const fillQuickCredentials = (key) => {
@@ -223,6 +235,31 @@ export default function LoginView({ onLoginSuccess }) {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Standalone Interactive Doctor Simulation Launcher */}
+          <div className="login-demo-launcher-box">
+            <div className="demo-launcher-header">
+              <span className="demo-launcher-badge">AUTONOMOUS DEMO</span>
+              <span className="demo-launcher-hint">Self-running telemetry (isolated from real hardware)</span>
+            </div>
+            <button
+              type="button"
+              className="btn-launch-doctor-demo"
+              onClick={handleLaunchDoctorDemo}
+              title="Simulate Dr. Alex Chen with automatic device telemetry and real-time low fluid alerts"
+            >
+              <div className="demo-btn-left">
+                <div className="demo-sparkle-pill">
+                  <Sparkles size={16} />
+                </div>
+                <div className="demo-text-block">
+                  <span className="demo-btn-heading">Launch Doctor Live Simulation</span>
+                  <span className="demo-btn-sub">Auto-dropping fluid levels, audible alerts & auto-clamping</span>
+                </div>
+              </div>
+              <ArrowRight size={18} className="demo-arrow-icon" />
+            </button>
           </div>
         </form>
       </div>
@@ -510,6 +547,104 @@ export default function LoginView({ onLoginSuccess }) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
+        }
+
+        .login-demo-launcher-box {
+          margin-top: 10px;
+          padding: 10px 12px;
+          border-radius: var(--radius-md);
+          background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(13, 148, 136, 0.08));
+          border: 1px dashed rgba(2, 132, 199, 0.35);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .demo-launcher-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.68rem;
+        }
+
+        .demo-launcher-badge {
+          background: #0284c7;
+          color: #ffffff;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+        }
+
+        .demo-launcher-hint {
+          color: var(--text-muted);
+          font-size: 0.7rem;
+        }
+
+        .btn-launch-doctor-demo {
+          width: 100%;
+          background: linear-gradient(135deg, #0284c7, #0d9488);
+          color: #ffffff;
+          border: none;
+          padding: 9px 12px;
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition: all var(--transition-fast);
+          box-shadow: 0 4px 12px rgba(2, 132, 199, 0.28);
+        }
+
+        .btn-launch-doctor-demo:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
+          background: linear-gradient(135deg, #0369a1, #0f766e);
+        }
+
+        .demo-btn-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-align: left;
+        }
+
+        .demo-sparkle-pill {
+          background: rgba(255, 255, 255, 0.22);
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fef08a;
+          flex-shrink: 0;
+        }
+
+        .demo-text-block {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .demo-btn-heading {
+          font-size: 0.82rem;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+        }
+
+        .demo-btn-sub {
+          font-size: 0.69rem;
+          opacity: 0.88;
+          font-weight: 500;
+        }
+
+        .demo-arrow-icon {
+          transition: transform var(--transition-fast);
+          flex-shrink: 0;
+        }
+
+        .btn-launch-doctor-demo:hover .demo-arrow-icon {
+          transform: translateX(4px);
         }
 
         .login-footer-caption {
