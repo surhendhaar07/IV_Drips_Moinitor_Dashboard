@@ -14,7 +14,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useIV } from '../context/IVContext';
-import { sqliteService } from '../services/sqliteService';
+import { sqliteService, DEFAULT_STAFF } from '../services/sqliteService';
 
 export default function LoginView({ onLoginSuccess }) {
   const { setCurrentUser, addToast, startDemoMode } = useIV();
@@ -78,17 +78,22 @@ export default function LoginView({ onLoginSuccess }) {
 
   const fillQuickCredentials = (key) => {
     setErrorMessage('');
-    setPassword('');
+    let staffUser = null;
     if (key === 'Administrator') {
-      setUsernameInput('admin');
+      staffUser = DEFAULT_STAFF.find(u => u.username === 'admin');
     } else if (key === 'Doctor') {
-      setUsernameInput('doctor');
+      staffUser = DEFAULT_STAFF.find(u => u.username === 'doctor');
     } else if (key === 'Nurse' || key === 'Nurse1') {
-      setUsernameInput('nurse');
+      staffUser = DEFAULT_STAFF.find(u => u.username === 'nurse');
     } else if (key === 'Nurse2') {
-      setUsernameInput('nurse2');
+      staffUser = DEFAULT_STAFF.find(u => u.username === 'nurse2');
     } else if (key === 'Nurse3') {
-      setUsernameInput('nurse3');
+      staffUser = DEFAULT_STAFF.find(u => u.username === 'nurse3');
+    }
+
+    if (staffUser) {
+      setUsernameInput(staffUser.username);
+      setPassword(staffUser.password);
     }
   };
 
@@ -183,7 +188,7 @@ export default function LoginView({ onLoginSuccess }) {
           {/* Fast Quick Staff Select */}
           <div className="quick-logins-box">
             <div className="quick-login-header">
-              <span className="quick-login-tag">Fast Staff Select (Fills Username):</span>
+              <span className="quick-login-tag">Fast Staff Select (Auto-fills SQLite User):</span>
             </div>
             <div className="quick-btn-group">
               <div className="quick-btn-row">
@@ -191,7 +196,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Administrator')}
-                  title="Select Administrator (admin)"
+                  title="Auto-fill Admin credentials (admin)"
                 >
                   🏥 Admin
                 </button>
@@ -199,7 +204,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Doctor')}
-                  title="Select Doctor (doctor)"
+                  title="Auto-fill Doctor credentials (doctor)"
                 >
                   🩺 Doctor
                 </button>
@@ -209,7 +214,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Nurse1')}
-                  title="Select Nurse Elena Rostova (ICU - nurse)"
+                  title="Auto-fill Nurse Elena Rostova credentials (nurse)"
                 >
                   👩‍⚕️ Nurse Elena
                 </button>
@@ -217,7 +222,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Nurse2')}
-                  title="Select Nurse Clara Higgins (Surgery - nurse2)"
+                  title="Auto-fill Nurse Clara Higgins credentials (nurse2)"
                 >
                   👩‍⚕️ Nurse Clara
                 </button>
@@ -225,7 +230,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Nurse3')}
-                  title="Select Nurse Marcus Chen (Pediatrics/ER - nurse3)"
+                  title="Auto-fill Nurse Marcus Chen credentials (nurse3)"
                 >
                   👩‍⚕️ Nurse Marcus
                 </button>
