@@ -2,6 +2,17 @@
 #define BLYNK_TEMPLATE_NAME "IV Drips Monitor"
 #define BLYNK_AUTH_TOKEN "Og3k7JHKay-1w_Qhp3zPnEQ8KPPs0fkg"
 
+// =========================================================================
+// IV Drip Monitor Telemetry - ESP8266 Firmware
+// =========================================================================
+// Features:
+// 1. Immediate Safety Auto-Clamp (Servo 90° instantly upon fluid depletion)
+// 2. Non-contact liquid sensing (XKC-Y25) + Active Buzzer Alert
+// 3. Dual Cloud Sync (Blynk IoT + Firebase Realtime Database)
+// 4. OLED SSD1306 Local Display (Throttled refresh to prevent WDT resets)
+// 5. Anti-Watchdog (WDT) and Brownout Protection
+// =========================================================================
+
 // ===== Libraries =====
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -26,17 +37,13 @@ const byte SensePin  = D5;   // XKC-Y25 Liquid Sensor
 const byte BuzzerPin = D6;   // Active Buzzer
 const byte SDA_PIN   = D1;   // OLED SDA
 const byte SCL_PIN   = D2;   // OLED SCL
+const byte ServoPin  = D4;   // SG90 Micro Servo (Note: Power servo from 5V/Vin, NOT 3.3V)
 
 // ===== Servo Setup =====
 Servo myServo;
 bool manualClamped = false; // Doctor commanded via Web Dashboard
-bool autoClamped   = false; // Triggered by fluid empty timer
+bool autoClamped   = false; // Triggered immediately by fluid empty sensor
 String lastServoCmd = "";
-
-// ===== Servo Timing =====
-unsigned long noLiquidStartTime = 0;
-bool timerStarted = false;
-const unsigned long CLAMP_DELAY = 60000; // 60000 for 1 minute
 
 // ===== Wi-Fi Credentials =====
 char ssid[] = "YOUR_WIFI_SSID";
@@ -49,23 +56,28 @@ char pass[] = "YOUR_WIFI_PASSWORD";
 // ===== DEVICE ID =====
 String deviceId = "IV-DEVICE-001";
 
-// ===== Timing ===== 
+// ===== Timing & Anti-WDT Throttling =====
 bool buzzerState = LOW;
-unsigned long previousFlip = 0;
-const unsigned long PERIOD = 250;
+unsigned long previousBuzzerFlip = 0;
+const unsigned long BUZZER_PERIOD = 250;
+
 unsigned long lastAlertTime = 0;
 const unsigned long ALERT_INTERVAL = 60000;
 
-// Cloud Sync Timer (Every 2 seconds)
+// Cloud Sync Timer (Every 2 seconds to prevent heap & network exhaustion)
 unsigned long lastSyncTime = 0;
-const unsigned long SYNC_INTERVAL = 1000;
+const unsigned long SYNC_INTERVAL = 2000;
+
+// OLED Refresh Timer (Update 4 times/sec instead of every loop iteration to prevent I2C bus lockup)
+unsigned long lastOledTime = 0;
+const unsigned long OLED_INTERVAL = 250;
 
 // ===== Setup =====
 void setup() {
   Serial.begin(115200);
-  delay(500);
+  delay(300);
   Serial.println("\n\n========================================");
-  Serial.println(">>> [1/4] Booting IV Drip Monitor NodeMCU");
+  Serial.println(">>> [1/4] Booting IV Drip Monitor ESP8266");
   Serial.println("========================================");
 
   pinMode(SensePin, INPUT);
@@ -73,12 +85,13 @@ void setup() {
   digitalWrite(BuzzerPin, LOW);
 
   // ===== SERVO INIT =====
-  myServo.attach(D4);
+  myServo.attach(ServoPin);
   myServo.write(120);   // Default: OPEN (120°)
   Serial.println(">>> [2/4] Servo initialized at 120 deg (OPEN)");
 
   // ===== OLED INIT =====
   Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(400000); // 400kHz fast I2C to reduce frame transfer time
   if (display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     display.clearDisplay();
     display.setTextColor(WHITE);
@@ -93,14 +106,15 @@ void setup() {
   WiFi.begin(ssid, pass);
   Serial.print(">>> Connecting to WiFi: ");
   Serial.println(ssid);
-  
+
   int wifiTimeout = 0;
   while (WiFi.status() != WL_CONNECTED && wifiTimeout < 30) {
-    delay(400);
+    delay(300);
+    yield(); // Feed watchdog during connection
     Serial.print(".");
     wifiTimeout++;
   }
-  
+
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n>>> [3/4] WiFi Connected! IP: " + WiFi.localIP().toString());
   } else {
@@ -120,38 +134,38 @@ void setup() {
   Firebase.reconnectWiFi(true);
   fbdo.setResponseSize(1024);
 
-  Serial.println(">>> Firebase Initialized with Database Secret!");
+  Serial.println(">>> Firebase Initialized with Anti-WDT Protection!");
   Serial.println(">>> Entering Main Loop...\n");
 }
 
 // ===== LOOP =====
 void loop() {
+  // 1. Maintain Blynk connection
   if (Blynk.connected()) {
     Blynk.run();
   }
+  yield(); // Keep background WiFi stack healthy
 
+  // 2. Read Sensors
   bool liquidPresent = (digitalRead(SensePin) == HIGH);
   bool isClamped = (manualClamped || autoClamped);
 
-  // ===== AUTO-CLAMP SAFETY LOGIC (Only runs if NOT manually clamped by Doctor) =====
+  // ===== IMMEDIATE AUTO-CLAMP SAFETY LOGIC =====
+  // As soon as fluid runs out, clamp the servo IMMEDIATELY without delay!
   if (!liquidPresent && !isClamped) {
-    if (!timerStarted) {
-      noLiquidStartTime = millis();
-      timerStarted = true;
-      Serial.println("[TIMER] Fluid empty! Auto-clamp timer started...");
-    }
-
-    // Auto-clamp when timer expires
-    if (millis() - noLiquidStartTime >= CLAMP_DELAY) {
-      myServo.write(90);   // CLAMP (90°)
-      autoClamped = true;
-      Serial.println(">>> [SAFETY] Time expired! Auto-clamped valve at 90 deg. <<<");
-    }
-  } else if (liquidPresent && !isClamped) {
-    timerStarted = false;
+    myServo.write(90);   // CLAMP IMMEDIATELY (90°)
+    autoClamped = true;
+    isClamped = true;
+    Serial.println(">>> [SAFETY] No liquid detected! Valve IMMEDIATELY auto-clamped at 90 deg. <<<");
+  } else if (liquidPresent && autoClamped && !manualClamped) {
+    // Automatically reopen if bottle is replaced/refilled (unless held clamped manually by Doctor)
+    myServo.write(120);  // REOPEN (120°)
+    autoClamped = false;
+    isClamped = false;
+    Serial.println(">>> [SERVO] Liquid restored. Auto-clamped valve reopened to 120 deg. <<<");
   }
 
-  // ===== BATTERY CALCULATION =====
+  // 3. Battery Calculation (A0 ADC)
   int raw = analogRead(A0);
   int batteryPercent = map(raw, 600, 1023, 0, 100);
   batteryPercent = constrain(batteryPercent, 0, 100);
@@ -159,119 +173,118 @@ void loop() {
   String status = liquidPresent ? "normal" : "empty";
   if (!liquidPresent && batteryPercent < 20) status = "low";
 
-  // ===== OLED & BUZZER HANDLING =====
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("Battery: ");
-  display.print(batteryPercent);
-  display.println("%");
-
-  display.setTextSize(2);
-  display.setCursor(0, 20);
-
-  if (liquidPresent) {
-    display.println("IV Fluid");
-    display.setCursor(0, 45);
-    display.println("Detected");
-    digitalWrite(BuzzerPin, LOW);
-
-    // Only auto-open if it was auto-clamped by empty bottle, NOT if manually clamped by Doctor!
-    if (autoClamped && !manualClamped) {
-      myServo.write(120);
-      autoClamped = false;
-      timerStarted = false;
-      Serial.println("[SERVO] Liquid restored. Auto-clamped valve reopened to 120 deg.");
-    }
+  // 4. Buzzer Handling
+  if (liquidPresent || isClamped) {
+    digitalWrite(BuzzerPin, LOW); // Silence buzzer if liquid is fine or if valve is clamped
   } else {
-    display.println("No Liquid");
-    display.setCursor(0, 45);
-    display.println("Available");
-
-    // 250ms flip buzzer until clamped
-    if (millis() - previousFlip > PERIOD && !isClamped) {
-      previousFlip = millis();
+    // Beep intermittently until clamped
+    if (millis() - previousBuzzerFlip > BUZZER_PERIOD) {
+      previousBuzzerFlip = millis();
       buzzerState = !buzzerState;
       digitalWrite(BuzzerPin, buzzerState);
-    } else if (isClamped) {
-      digitalWrite(BuzzerPin, LOW); // Silence buzzer once clamped
     }
 
-    // Alert push
+    // Blynk push alert
     if (millis() - lastAlertTime > ALERT_INTERVAL) {
       if (Blynk.connected()) {
-        Blynk.logEvent("iv_drip_alert", "IV Bag EMPTY! Check immediately.");
+        Blynk.logEvent("iv_drip_alert", "IV Bag EMPTY! Valve clamped immediately.");
       }
       lastAlertTime = millis();
     }
   }
 
-  // OLED Status Indicator
-  display.setTextSize(1);
-  display.setCursor(80, 0);
-  if (isClamped) {
-    display.print("CLAMPED");
-  } else if (!liquidPresent) {
-    display.print("WAITING");
-  } else {
-    display.print("OPEN");
-  }
-  display.display();
+  // 5. Throttled OLED Rendering (Every 250ms instead of every loop iteration to prevent WDT resets)
+  if (millis() - lastOledTime >= OLED_INTERVAL) {
+    lastOledTime = millis();
 
-  // ===== SYNC TO BLYNK & FIREBASE EVERY 2 SECONDS =====
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("Battery: ");
+    display.print(batteryPercent);
+    display.println("%");
+
+    display.setTextSize(2);
+    display.setCursor(0, 20);
+
+    if (liquidPresent) {
+      display.println("IV Fluid");
+      display.setCursor(0, 45);
+      display.println("Detected");
+    } else {
+      display.println("No Liquid");
+      display.setCursor(0, 45);
+      display.println("Available");
+    }
+
+    // OLED Status Indicator
+    display.setTextSize(1);
+    display.setCursor(80, 0);
+    if (isClamped) {
+      display.print("CLAMPED");
+    } else {
+      display.print("OPEN");
+    }
+    display.display();
+  }
+
+  yield(); // Feed watchdog
+
+  // 6. SYNC TO BLYNK & FIREBASE EVERY 2 SECONDS
   if (millis() - lastSyncTime >= SYNC_INTERVAL) {
     lastSyncTime = millis();
 
-    // 1. Check for Remote Commands from Web Dashboard (Doctor clicked Clamp/Open)
-    if (Firebase.getString(fbdo, "/devices/" + deviceId + "/servoCommand")) {
-      String cmd = fbdo.stringData();
-      if (cmd != lastServoCmd && cmd != "") {
-        lastServoCmd = cmd;
-        if (cmd == "CLAMP") {
-          manualClamped = true;
-          myServo.write(90); // Physically turn servo to 90°
-          Serial.println(">>> [REMOTE] Dashboard commanded CLAMP! Servo set to 90 deg. <<<");
-        } else if (cmd == "OPEN") {
-          manualClamped = false;
-          autoClamped   = false;
-          timerStarted  = false;
-          myServo.write(120); // Physically turn servo to 120°
-          Serial.println(">>> [REMOTE] Dashboard commanded OPEN! Servo set to 120 deg. <<<");
+    // Check WiFi before network calls to avoid blocking WDT resets
+    if (WiFi.status() == WL_CONNECTED) {
+      // (a) Check for Remote Commands from Web Dashboard (Doctor clicked Clamp/Open)
+      if (Firebase.getString(fbdo, "/devices/" + deviceId + "/servoCommand")) {
+        String cmd = fbdo.stringData();
+        if (cmd != lastServoCmd && cmd != "") {
+          lastServoCmd = cmd;
+          if (cmd == "CLAMP") {
+            manualClamped = true;
+            myServo.write(90); // Turn servo to 90° (Clamp)
+            Serial.println(">>> [REMOTE] Dashboard commanded CLAMP! Servo set to 90 deg. <<<");
+          } else if (cmd == "OPEN") {
+            manualClamped = false;
+            autoClamped   = false;
+            myServo.write(120); // Turn servo to 120° (Open)
+            Serial.println(">>> [REMOTE] Dashboard commanded OPEN! Servo set to 120 deg. <<<");
+          }
         }
       }
-    }
+      yield();
 
-    // Recalculate clamped state after checking remote command
-    isClamped = (manualClamped || autoClamped);
+      // Recalculate clamped state
+      isClamped = (manualClamped || autoClamped);
+      String flow = isClamped ? "clamped" : "open";
 
-    // 2. Determine Flow Status string for Web Dashboard & Firebase
-    String flow = isClamped ? "clamped" : (!liquidPresent ? "waiting" : "open");
+      // (b) Blynk Virtual Pins
+      if (Blynk.connected()) {
+        Blynk.virtualWrite(V0, batteryPercent);
+        Blynk.virtualWrite(V1, liquidPresent ? 1 : 0);
+      }
 
-    // 3. Blynk Virtual Pins
-    if (Blynk.connected()) {
-      Blynk.virtualWrite(V0, batteryPercent);
-      Blynk.virtualWrite(V1, liquidPresent ? 1 : 0);
-    }
+      // (c) Batched Firebase RTDB Update
+      FirebaseJson telemetry;
+      telemetry.set("level", liquidPresent ? 100 : 0);
+      telemetry.set("battery", batteryPercent);
+      telemetry.set("status", status);
+      telemetry.set("flowStatus", flow);
+      telemetry.set("lastSeen", (double)millis());
 
-    // 4. Batched Firebase RTDB Update
-    FirebaseJson telemetry;
-    telemetry.set("level", liquidPresent ? 100 : 0);
-    telemetry.set("battery", batteryPercent);
-    telemetry.set("status", status);
-    telemetry.set("flowStatus", flow);
-    telemetry.set("lastSeen", (double)millis());
-
-    if (Firebase.updateNode(fbdo, "/devices/" + deviceId, telemetry)) {
-      Serial.print("[FIREBASE SUCCESS] flowStatus=");
-      Serial.print(flow);
-      Serial.print(", lastSeen=");
-      Serial.println(millis());
-    } else {
-      Serial.print("[FIREBASE ERROR] Reason: ");
-      Serial.println(fbdo.errorReason());
+      if (Firebase.updateNode(fbdo, "/devices/" + deviceId, telemetry)) {
+        Serial.print("[FIREBASE SUCCESS] flowStatus=");
+        Serial.print(flow);
+        Serial.print(", lastSeen=");
+        Serial.println(millis());
+      } else {
+        Serial.print("[FIREBASE ERROR] Reason: ");
+        Serial.println(fbdo.errorReason());
+      }
     }
   }
 
-  delay(20);
+  delay(10);
+  yield();
 }
-

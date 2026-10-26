@@ -25,8 +25,6 @@ export default function HardwareSimulatorPanel({ onClose }) {
   const [liquidPresent, setLiquidPresent] = useState(currentDev ? currentDev.liquidPresent : true);
   const [batteryLevel, setBatteryLevel] = useState(currentDev ? currentDev.battery : 85);
   const [servoAngle, setServoAngle] = useState(currentDev ? currentDev.servoAngle || 120 : 120);
-  const [countdown, setCountdown] = useState(60);
-  const [isCountingDown, setIsCountingDown] = useState(false);
 
   // Sync controls when selected device changes
   useEffect(() => {
@@ -37,35 +35,6 @@ export default function HardwareSimulatorPanel({ onClose }) {
     }
   }, [selectedSimDevice]);
 
-  // Simulate the 60s latch timer from ESP8266 code
-  useEffect(() => {
-    let timer;
-    if (!liquidPresent && servoAngle !== 90) {
-      setIsCountingDown(true);
-      timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setServoAngle(90); // Auto-clamp after 60s
-            setIsCountingDown(false);
-            simulateHardwareTelemetry(selectedSimDevice, {
-              liquidPresent: false,
-              battery: batteryLevel,
-              servoClamped: true
-            });
-            addToast('ESP8266 Auto-Clamp Engaged', `60s timer expired for ${selectedSimDevice}. Servo locked at 90°.`, 'critical');
-            return 60;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      setIsCountingDown(false);
-      setCountdown(60);
-    }
-    return () => clearInterval(timer);
-  }, [liquidPresent, servoAngle, selectedSimDevice]);
-
   const handleToggleLiquid = (present) => {
     setLiquidPresent(present);
     if (present) {
@@ -75,19 +44,21 @@ export default function HardwareSimulatorPanel({ onClose }) {
         battery: batteryLevel,
         servoClamped: false
       });
-      addToast('Fluid Detected (SensePin HIGH)', `${selectedSimDevice} non-contact sensor detected liquid. Buzzer silenced.`, 'success');
+      addToast('Fluid Detected (SensePin HIGH)', `${selectedSimDevice} non-contact sensor detected liquid. Flow open (120°).`, 'success');
     } else {
+      // Immediate auto-clamp upon fluid depletion
+      setServoAngle(90);
       simulateHardwareTelemetry(selectedSimDevice, {
         liquidPresent: false,
         battery: batteryLevel,
-        servoClamped: false
+        servoClamped: true
       });
+      addToast('Immediate Safety Auto-Clamp Engaged', `Fluid empty detected on ${selectedSimDevice}. Servo locked at 90° immediately.`, 'critical');
     }
   };
 
   const handleTriggerInstantClamp = () => {
     setServoAngle(90);
-    setIsCountingDown(false);
     simulateHardwareTelemetry(selectedSimDevice, {
       liquidPresent: false,
       battery: batteryLevel,
@@ -99,8 +70,6 @@ export default function HardwareSimulatorPanel({ onClose }) {
   const handleResetOpen = () => {
     setLiquidPresent(true);
     setServoAngle(120);
-    setIsCountingDown(false);
-    setCountdown(60);
     simulateHardwareTelemetry(selectedSimDevice, {
       liquidPresent: true,
       battery: batteryLevel,
@@ -186,15 +155,13 @@ export default function HardwareSimulatorPanel({ onClose }) {
           </div>
         </div>
 
-        {/* Middle Column: 60-Second Clamp Timer & Servo Angle */}
+        {/* Middle Column: Immediate Auto-Clamp Status & Servo Angle */}
         <div className="sim-column">
           <div className="sim-status-box">
-            <span className="sim-box-title">ESP8266 Auto-Clamp Protocol</span>
+            <span className="sim-box-title">ESP8266 Immediate Auto-Clamp Protocol</span>
             <div className="timer-display mono">
               {isDevOffline ? (
                 <span className="text-muted" style={{ fontSize: '0.85rem' }}>OFFLINE: SERVO CANNOT BE CONTROLLED</span>
-              ) : isCountingDown ? (
-                <span className="text-danger">CLAMP DELAY: {countdown}s</span>
               ) : servoAngle === 90 ? (
                 <span className="text-danger">CLAMP LATCHED (90°)</span>
               ) : (
@@ -249,7 +216,7 @@ export default function HardwareSimulatorPanel({ onClose }) {
               <div className="oled-top-row">
                 <span>Battery: {batteryLevel}%</span>
                 <span>
-                  {isDevOffline ? "OFFLINE" : (servoAngle === 90 ? "CLAMPED" : (!liquidPresent ? "WAITING" : "OPEN"))}
+                  {isDevOffline ? "OFFLINE" : (servoAngle === 90 ? "CLAMPED" : "OPEN")}
                 </span>
               </div>
               <div className="oled-body-text">

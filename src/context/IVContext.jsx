@@ -801,7 +801,8 @@ export function IVProvider({ children }) {
     const level = liquidPresent ? 100 : 0;
     const finalBattery = typeof battery === 'number' ? battery : dev.battery;
     let computedStatus = liquidPresent ? (finalBattery < 20 ? 'low' : 'normal') : 'empty';
-    const flowStatus = servoClamped ? 'clamped' : (liquidPresent ? 'open' : 'waiting');
+    const isClamped = servoClamped || !liquidPresent;
+    const flowStatus = isClamped ? 'clamped' : 'open';
 
     setDevices(prev => prev.map(d => {
       if (d.id === deviceId) {
@@ -812,7 +813,7 @@ export function IVProvider({ children }) {
           status: computedStatus,
           liquidPresent,
           flowStatus,
-          servoAngle: servoClamped ? 90 : 120,
+          servoAngle: isClamped ? 90 : 120,
           lastSeen: Date.now()
         };
       }

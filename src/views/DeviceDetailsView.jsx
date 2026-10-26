@@ -501,7 +501,7 @@ export default function DeviceDetailsView({ deviceId, onBack }) {
                     Acknowledge Alarm LINE EMPTY LINE Alarm
                   </div>
                   <div className="timeline-item-desc">
-                    Automated latch timer started (60s countdown to servo clamp at 90°).
+                    Immediate safety clamp engaged (servo locked at 90° upon fluid depletion).
                   </div>
                   <span className="timeline-time mono">15 mins ago</span>
                 </div>

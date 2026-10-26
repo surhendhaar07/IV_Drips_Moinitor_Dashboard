@@ -12,8 +12,8 @@ This web application is a Hospital Management & Telemetry Dashboard for IV Drip 
 | :--- | :--- | :--- | :--- |
 | **XKC-Y25 Non-Contact Liquid Sensor** | `D5` (GPIO 14) | Digital Input | `HIGH`: IV Fluid Present<br>`LOW`: No Fluid / Air in Drip Chamber |
 | **Active 5V Buzzer** | `D6` (GPIO 12) | Digital Output | Pulses at 250ms cadence when fluid is empty until acknowledged/clamped |
-| **SG90 Micro Servo Valve** | `D4` (GPIO 2) | PWM Output | `120°`: Flow OPEN (normal operation)<br>`90°`: Flow CLAMPED (safety latch after 60s of no liquid or remote clamp) |
-| **SSD1306 0.96" OLED Display** | `D1` (SDA), `D2` (SCL) | I2C (0x3C) | Displays Battery %, Fluid Status, Countdown, and Flow state (OPEN/WAITING/CLAMPED) |
+| **SG90 Micro Servo Valve** | `D4` (GPIO 2) | PWM Output | `120°`: Flow OPEN (normal operation)<br>`90°`: Flow CLAMPED (safety latch immediately upon empty fluid or remote clamp) |
+| **SSD1306 0.96" OLED Display** | `D1` (SDA), `D2` (SCL) | I2C (0x3C) | Displays Battery %, Fluid Status, and Flow state (OPEN/CLAMPED) |
 | **TP4056 Battery Charger & Voltage** | `A0` (ADC0) | Analog Input | Reads battery voltage (mapped 600 - 1023 raw ADC to 0 - 100%) |
 | **MT3608 DC-DC Step-Up Converter** | `VIN` / `5V` | Power Rail | Steps up 3.7V Li-ion to constant 5.0V for Servo, Buzzer, and Sensor |
 
@@ -32,7 +32,7 @@ All patient details, room, bed, and hardware assignments are **strictly preserve
   "level": 100,           // 100 (fluid present) or 0 (empty)
   "battery": 85,          // 0 to 100%
   "status": "normal",     // "normal", "low", or "empty"
-  "flowStatus": "open",   // "open", "waiting" (in 60s countdown), or "clamped"
+  "flowStatus": "open",   // "open" or "clamped" (immediate safety latch)
   "liquidPresent": true,  // true / false
   "servoAngle": 120,      // 120 (open) or 90 (clamped)
   "lastSeen": 1728901234, // Unix epoch or millis() heartbeat

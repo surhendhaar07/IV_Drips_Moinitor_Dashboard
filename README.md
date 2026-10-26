@@ -248,7 +248,7 @@ During the development and testing phases, several key engineering insights and 
 
 1. **Coordination Between Sensing & Mechanical Latching**:
    - *Hurdle*: Rapid fluid meniscus fluctuations or micro-bubbles inside the drip chamber could trigger false-positive clamps.
-   - *Solution*: Implemented debounce timing in the ESP8266 firmware and a 60-second graceful countdown before the mechanical clamp executes, paired with immediate audio alerting.
+   - *Solution*: Implemented debounce filtering in the ESP8266 firmware paired with immediate mechanical servo clamp execution upon verified fluid empty detection, paired with immediate audio alerting.
 2. **Eliminating the Manual Reset Dependency**:
    - *Hurdle*: Early prototypes required nurses to find and press a small physical push-button to unclamp the tube after hanging a new bottle.
    - *Solution*: Developed a closed-loop sensing return: once the XKC-Y26-V detects that fluid has returned to the threshold, the microcontroller commands the servo back to `120°` (open) automatically.
@@ -414,9 +414,8 @@ To test the system without physical hardware:
 1. Log into the dashboard and navigate to any device detail card.
 2. Open the **Hardware Simulator** panel at the bottom right.
 3. Test physical edge-cases:
-   - Toggle **Liquid Present / Empty** to simulate IV depletion.
+   - Toggle **Liquid Present / Empty** to simulate IV depletion and observe immediate auto-clamping.
    - Adjust battery sliders to verify low-power notifications.
-   - Trigger the **60-second safety countdown** to observe real-time auto-clamping.
    - Issue **Remote Clamp / Open** commands to verify bi-directional IoT communication.
 
 ---
