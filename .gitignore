@@ -15,6 +15,13 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local credentials (DO NOT COMMIT OR PUSH TO GIT)
+STAFF_CREDENTIALS_LOCAL.txt
+credentials_local.txt
+credentials.local.json
+*credentials*
+*CREDENTIALS*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

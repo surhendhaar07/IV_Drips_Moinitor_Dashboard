@@ -312,19 +312,20 @@ Compiled production files will be generated in `dist/`.
 
 ---
 
-## 🔐 Demo Credentials
+## 🔐 Staff Access & Authentication
 
-The platform provides role-based credentials for immediate testing:
+The platform provides role-based clinical access with individualized authentication:
 
-| Role | Username | Password | Access Scope |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin` | `password123` | Full Access: User Management, Audit Logs, Settings |
-| **Attending Doctor** | `doctor` | `password123` | Clinical Access: Vitals, Patient Assignment, Remote Valve Actuation |
-| **Ward Nurse 1** | `nurse` | `password123` | Ward Telemetry: Infusion Monitoring, Alert Acknowledgement |
-| **Ward Nurse 2** | `nurse2` | `password123` | Ward Telemetry: Bed Monitoring |
-| **Ward Nurse 3** | `nurse3` | `password123` | Ward Telemetry: Bed Monitoring |
+| Role | Username | Access Scope |
+| :--- | :--- | :--- |
+| **Administrator** | `admin` | Full Access: User Management, Audit Logs, Settings |
+| **Attending Doctor** | `doctor` | Clinical Access: Vitals, Patient Assignment, Remote Valve Actuation |
+| **Cardiology Doctor** | `doctor2` | Critical Care Access: Cardiology & ICU Vitals, Remote Valve Control |
+| **Ward Nurse 1 (ICU)** | `nurse` | Ward Telemetry: Infusion Monitoring, Alert Acknowledgement |
+| **Ward Nurse 2 (Surgery)** | `nurse2` | Surgical Recovery Telemetry: Bed Monitoring & Infusion Alerts |
+| **Ward Nurse 3 (Pediatrics/ER)**| `nurse3` | Pediatric Ward Telemetry: Bed Monitoring & Infusion Alerts |
 
-> 💡 *Quick Login buttons are available on the login screen for instant one-click testing.*
+> 🔒 *Security Note: Staff passwords are individualized and managed via secured local configuration (`STAFF_CREDENTIALS_LOCAL.txt`, excluded from git). Default credential pre-fill has been removed for clinical security.*
 
 ---
 

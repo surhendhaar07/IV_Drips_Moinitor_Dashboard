@@ -18,8 +18,8 @@ import { sqliteService } from '../services/sqliteService';
 
 export default function LoginView({ onLoginSuccess }) {
   const { setCurrentUser, addToast, startDemoMode } = useIV();
-  const [usernameInput, setUsernameInput] = useState('doctor');
-  const [password, setPassword] = useState('password123');
+  const [usernameInput, setUsernameInput] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,21 +78,17 @@ export default function LoginView({ onLoginSuccess }) {
 
   const fillQuickCredentials = (key) => {
     setErrorMessage('');
+    setPassword('');
     if (key === 'Administrator') {
       setUsernameInput('admin');
-      setPassword('password123');
     } else if (key === 'Doctor') {
       setUsernameInput('doctor');
-      setPassword('password123');
     } else if (key === 'Nurse' || key === 'Nurse1') {
       setUsernameInput('nurse');
-      setPassword('password123');
     } else if (key === 'Nurse2') {
       setUsernameInput('nurse2');
-      setPassword('password123');
     } else if (key === 'Nurse3') {
       setUsernameInput('nurse3');
-      setPassword('password123');
     }
   };
 
@@ -184,10 +180,10 @@ export default function LoginView({ onLoginSuccess }) {
             {isLoading ? 'Verifying with SQLite...' : 'Sign In to Hospital Portal'}
           </button>
 
-          {/* Fast Quick Demo Logins with All 3 Roles */}
+          {/* Fast Quick Staff Select */}
           <div className="quick-logins-box">
             <div className="quick-login-header">
-              <span className="quick-login-tag">Fast Staff Select (Auto-fills SQLite User):</span>
+              <span className="quick-login-tag">Fast Staff Select (Fills Username):</span>
             </div>
             <div className="quick-btn-group">
               <div className="quick-btn-row">
@@ -195,7 +191,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Administrator')}
-                  title="Fill Admin Credentials (admin / password123)"
+                  title="Select Administrator (admin)"
                 >
                   🏥 Admin
                 </button>
@@ -203,7 +199,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Doctor')}
-                  title="Fill Doctor Credentials (doctor / password123)"
+                  title="Select Doctor (doctor)"
                 >
                   🩺 Doctor
                 </button>
@@ -213,7 +209,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Nurse1')}
-                  title="Nurse Elena Rostova (ICU) - nurse / password123"
+                  title="Select Nurse Elena Rostova (ICU - nurse)"
                 >
                   👩‍⚕️ Nurse Elena
                 </button>
@@ -221,7 +217,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Nurse2')}
-                  title="Nurse Clara Higgins (Surgery) - nurse2 / password123"
+                  title="Select Nurse Clara Higgins (Surgery - nurse2)"
                 >
                   👩‍⚕️ Nurse Clara
                 </button>
@@ -229,7 +225,7 @@ export default function LoginView({ onLoginSuccess }) {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => fillQuickCredentials('Nurse3')}
-                  title="Nurse Marcus Chen (Pediatrics/ER) - nurse3 / password123"
+                  title="Select Nurse Marcus Chen (Pediatrics/ER - nurse3)"
                 >
                   👩‍⚕️ Nurse Marcus
                 </button>

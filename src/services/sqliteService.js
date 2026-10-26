@@ -13,7 +13,7 @@ export const DEFAULT_STAFF = [
   {
     id: 'user-admin-001',
     username: 'admin',
-    password: 'password123',
+    password: 'Adm!nVance#982',
     name: 'Director M. Vance',
     role: 'Administrator',
     department: 'Hospital Administration & Safety',
@@ -27,7 +27,7 @@ export const DEFAULT_STAFF = [
   {
     id: 'user-doc-001',
     username: 'doctor',
-    password: 'password123',
+    password: 'DocJenkins*741',
     name: 'Dr. Sarah Jenkins',
     role: 'Doctor',
     department: 'Cardiology & Intensive Care',
@@ -41,7 +41,7 @@ export const DEFAULT_STAFF = [
   {
     id: 'user-doc-002',
     username: 'doctor2',
-    password: 'password123',
+    password: 'DocHayes$852',
     name: 'Dr. Alexander Hayes',
     role: 'Doctor',
     department: 'Emergency & Critical Care',
@@ -55,7 +55,7 @@ export const DEFAULT_STAFF = [
   {
     id: 'user-nurse-001',
     username: 'nurse',
-    password: 'password123',
+    password: 'NurseElena!369',
     name: 'Nurse Elena Rostova',
     role: 'Nurse',
     department: 'ICU Ward 3 Bedside Care',
@@ -69,7 +69,7 @@ export const DEFAULT_STAFF = [
   {
     id: 'user-nurse-002',
     username: 'nurse2',
-    password: 'password123',
+    password: 'NurseClara#258',
     name: 'Nurse Clara Higgins',
     role: 'Nurse',
     department: 'Post-Op Recovery & Surgery',
@@ -83,7 +83,7 @@ export const DEFAULT_STAFF = [
   {
     id: 'user-nurse-003',
     username: 'nurse3',
-    password: 'password123',
+    password: 'NurseMarcus$147',
     name: 'Nurse Marcus Chen',
     role: 'Nurse',
     department: 'Pediatric & Emergency Unit',
@@ -410,6 +410,11 @@ class SQLiteService {
         u.id, u.username, u.password, u.name, u.role, u.department,
         u.email, u.phone, u.badge, u.status, u.created_at, u.last_login
       ]);
+      // Synchronize separate password if previously seeded with default password
+      this.db.run(
+        "UPDATE users SET password = ? WHERE id = ? AND (password = 'password123' OR password != ?)",
+        [u.password, u.id, u.password]
+      );
     }
     insertStaff.free();
 
@@ -498,7 +503,13 @@ class SQLiteService {
     }
     const map = new Map(currentUsers.map(u => [u.username, u]));
     DEFAULT_STAFF.forEach(u => {
-      if (!map.has(u.username)) currentUsers.push(u);
+      const existing = map.get(u.username);
+      if (!existing) {
+        currentUsers.push({ ...u });
+      } else {
+        // Update to separate password
+        existing.password = u.password;
+      }
     });
     localStorage.setItem(USERS_BACKUP_KEY, JSON.stringify(currentUsers));
 
