@@ -79,6 +79,8 @@ export function IVProvider({ children }) {
     return [];
   });
 
+  const [acknowledgedDeviceIds, setAcknowledgedDeviceIds] = useState(new Set());
+
   // UI state
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'patients', 'vitals', 'assigns', 'reports', 'settings'
@@ -230,9 +232,18 @@ export function IVProvider({ children }) {
 
   // Check for critical unacknowledged alerts to sound alarm:
   // For nurses, alarm sounds ONLY for their assigned patients!
+  // Sounds when any unacknowledged critical alert exists OR when any assigned patient's line is empty/clamped
   const unacknowledgedCritical = useMemo(() => {
-    return visibleAlerts.some(a => !a.acknowledged && (a.severity === 'critical' || a.type === 'empty'));
-  }, [visibleAlerts]);
+    const hasUnackAlert = visibleAlerts.some(
+      a => !a.acknowledged && (a.severity === 'critical' || a.type === 'empty')
+    );
+    const hasEmptyBed = visibleDevices.some(
+      d => d.status !== 'offline' && 
+           (d.status === 'empty' || d.level === 0 || !d.liquidPresent) &&
+           !acknowledgedDeviceIds.has(d.id)
+    );
+    return hasUnackAlert || hasEmptyBed;
+  }, [visibleAlerts, visibleDevices, acknowledgedDeviceIds]);
 
   useEffect(() => {
     if (unacknowledgedCritical && !isMuted && notificationsConfig.sound) {
@@ -493,6 +504,10 @@ export function IVProvider({ children }) {
   };
 
   const acknowledgeAlert = async (alertId) => {
+    const targetAlert = allAlerts.find(a => a.id === alertId);
+    if (targetAlert?.deviceId) {
+      setAcknowledgedDeviceIds(prev => new Set([...prev, targetAlert.deviceId]));
+    }
     if (isDemoMode && demoAlerts.some(a => a.id === alertId)) {
       setDemoAlerts(prev => prev.map(a => a.id === alertId ? { ...a, acknowledged: true } : a));
       soundService.stopAlarm();
@@ -504,6 +519,7 @@ export function IVProvider({ children }) {
   };
 
   const acknowledgeAllAlerts = async () => {
+    setAcknowledgedDeviceIds(new Set(visibleDevices.map(d => d.id)));
     if (isDemoMode) {
       setDemoAlerts(prev => prev.map(a => ({ ...a, acknowledged: true })));
     }

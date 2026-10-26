@@ -197,8 +197,8 @@ export default function HardwareSimulatorPanel({ onClose }) {
             </div>
             <div className="pin-item">
               <span className="pin-name">BuzzerPin (D6):</span>
-              <span className={`pin-state ${!liquidPresent && servoAngle !== 90 ? 'pulsing' : 'low'}`}>
-                {!liquidPresent && servoAngle !== 90 ? 'BEEPING' : 'OFF'}
+              <span className={`pin-state ${!liquidPresent ? 'pulsing' : 'low'}`}>
+                {!liquidPresent ? 'BEEPING' : 'OFF'}
               </span>
             </div>
             <div className="pin-item">
