@@ -133,16 +133,11 @@ export default function LoginView({ onLoginSuccess }) {
             >
               <div className="hero-demo-left">
                 <div className="hero-demo-sparkle-pill">
-                  <Sparkles size={20} className="hero-sparkle-icon" />
+                  <Sparkles size={22} className="hero-sparkle-icon" />
                 </div>
                 <div className="hero-demo-text-group">
-                  <div className="hero-demo-title-row">
-                    <span className="hero-demo-title">Doctor Live Simulation</span>
-                    <span className="hero-demo-badge">TRY DEMO</span>
-                  </div>
-                  <span className="hero-demo-subtitle">
-                    Autonomous bedside IV telemetry, fluid drop alerts & auto pinch valve
-                  </span>
+                  <span className="hero-demo-title">Doctor Live Simulation</span>
+                  <span className="hero-demo-badge">TRY DEMO</span>
                 </div>
               </div>
               <div className="hero-demo-right-action">
@@ -645,19 +640,13 @@ export default function LoginView({ onLoginSuccess }) {
         .hero-demo-text-group {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 4px;
           min-width: 0;
-        }
-
-        .hero-demo-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
+          align-items: flex-start;
         }
 
         .hero-demo-title {
-          font-size: 0.95rem;
+          font-size: 0.98rem;
           font-weight: 800;
           letter-spacing: -0.01em;
           color: #ffffff;
@@ -666,22 +655,15 @@ export default function LoginView({ onLoginSuccess }) {
 
         .hero-demo-badge {
           background: rgba(255, 255, 255, 0.25);
-          border: 1px solid rgba(255, 255, 255, 0.45);
+          border: 1.5px solid rgba(255, 255, 255, 0.55);
           color: #ffffff;
-          padding: 1px 7px;
+          padding: 3px 12px;
           border-radius: 999px;
-          font-size: 0.62rem;
+          font-size: 0.8rem;
           font-weight: 800;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
-        }
-
-        .hero-demo-subtitle {
-          font-size: 0.72rem;
-          color: rgba(255, 255, 255, 0.92);
-          font-weight: 500;
-          line-height: 1.28;
-          white-space: normal;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
         }
 
         .hero-demo-right-action {
