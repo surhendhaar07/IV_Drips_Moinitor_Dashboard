@@ -123,6 +123,41 @@ export default function LoginView({ onLoginSuccess }) {
             </div>
           )}
 
+          {/* Prominent Demo Launcher Placed First Above Staff Username */}
+          <div className="login-demo-top-container">
+            <button
+              type="button"
+              className="btn-launch-doctor-demo-hero"
+              onClick={handleLaunchDoctorDemo}
+              title="Click to launch autonomous Doctor Live Simulation with auto-dropping fluid and audible alarms"
+            >
+              <div className="hero-demo-left">
+                <div className="hero-demo-sparkle-pill">
+                  <Sparkles size={20} className="hero-sparkle-icon" />
+                </div>
+                <div className="hero-demo-text-group">
+                  <div className="hero-demo-title-row">
+                    <span className="hero-demo-title">Doctor Live Simulation</span>
+                    <span className="hero-demo-badge">TRY DEMO</span>
+                  </div>
+                  <span className="hero-demo-subtitle">
+                    Autonomous bedside IV telemetry, fluid drop alerts & auto pinch valve
+                  </span>
+                </div>
+              </div>
+              <div className="hero-demo-right-action">
+                <span className="hero-demo-action-label">Launch</span>
+                <ArrowRight size={16} className="hero-arrow-icon" />
+              </div>
+            </button>
+
+            <div className="login-divider-row">
+              <span className="divider-line"></span>
+              <span className="divider-label">OR LOGIN WITH STAFF CREDENTIALS</span>
+              <span className="divider-line"></span>
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="login-label">Staff Username or Hospital Email</label>
             <div className="input-with-icon">
@@ -237,31 +272,6 @@ export default function LoginView({ onLoginSuccess }) {
               </div>
             </div>
           </div>
-
-          {/* Standalone Interactive Doctor Simulation Launcher */}
-          <div className="login-demo-launcher-box">
-            <div className="demo-launcher-header">
-              <span className="demo-launcher-badge">AUTONOMOUS DEMO</span>
-              <span className="demo-launcher-hint">Self-running telemetry (isolated from real hardware)</span>
-            </div>
-            <button
-              type="button"
-              className="btn-launch-doctor-demo"
-              onClick={handleLaunchDoctorDemo}
-              title="Simulate Dr. Alex Chen with automatic device telemetry and real-time low fluid alerts"
-            >
-              <div className="demo-btn-left">
-                <div className="demo-sparkle-pill">
-                  <Sparkles size={16} />
-                </div>
-                <div className="demo-text-block">
-                  <span className="demo-btn-heading">Launch Doctor Live Simulation</span>
-                  <span className="demo-btn-sub">Auto-dropping fluid levels, audible alerts & auto-clamping</span>
-                </div>
-              </div>
-              <ArrowRight size={18} className="demo-arrow-icon" />
-            </button>
-          </div>
         </form>
       </div>
 
@@ -296,18 +306,20 @@ export default function LoginView({ onLoginSuccess }) {
           z-index: 10;
           width: 100%;
           max-width: 440px;
-          background: rgba(255, 255, 255, 0.88);
+          background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border: 1px solid rgba(255, 255, 255, 0.6);
           border-radius: 28px;
-          padding: 38px 34px;
+          padding: 28px 28px;
           box-shadow: 0 25px 60px -10px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.5);
           animation: modalSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          max-height: 94vh;
+          overflow-y: auto;
         }
 
         [data-theme="dark"] .login-glass-card {
-          background: rgba(18, 30, 61, 0.88);
+          background: rgba(18, 30, 61, 0.92);
           border-color: rgba(56, 189, 248, 0.2);
         }
 
@@ -316,20 +328,20 @@ export default function LoginView({ onLoginSuccess }) {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          margin-bottom: 26px;
+          margin-bottom: 16px;
         }
 
         .login-icon-wrap {
-          width: 58px;
-          height: 58px;
-          border-radius: 18px;
+          width: 52px;
+          height: 52px;
+          border-radius: 16px;
           background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
           display: flex;
           align-items: center;
           justify-content: center;
           color: #ffffff;
           box-shadow: 0 8px 24px rgba(2, 132, 199, 0.4);
-          margin-bottom: 14px;
+          margin-bottom: 10px;
         }
 
         .login-pulse-icon {
@@ -550,102 +562,176 @@ export default function LoginView({ onLoginSuccess }) {
           justify-content: center;
         }
 
-        .login-demo-launcher-box {
-          margin-top: 10px;
-          padding: 10px 12px;
-          border-radius: var(--radius-md);
-          background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(13, 148, 136, 0.08));
-          border: 1px dashed rgba(2, 132, 199, 0.35);
+        .login-demo-top-container {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 12px;
+          margin-bottom: 4px;
         }
 
-        .demo-launcher-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 0.68rem;
-        }
-
-        .demo-launcher-badge {
-          background: #0284c7;
-          color: #ffffff;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-weight: 800;
-          letter-spacing: 0.04em;
-        }
-
-        .demo-launcher-hint {
-          color: var(--text-muted);
-          font-size: 0.7rem;
-        }
-
-        .btn-launch-doctor-demo {
+        .btn-launch-doctor-demo-hero {
           width: 100%;
-          background: linear-gradient(135deg, #0284c7, #0d9488);
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0d9488 100%);
           color: #ffffff;
-          border: none;
-          padding: 9px 12px;
-          border-radius: var(--radius-md);
+          border: 1.5px solid rgba(255, 255, 255, 0.55);
+          padding: 12px 14px;
+          border-radius: 18px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          transition: all var(--transition-fast);
-          box-shadow: 0 4px 12px rgba(2, 132, 199, 0.28);
-        }
-
-        .btn-launch-doctor-demo:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
-          background: linear-gradient(135deg, #0369a1, #0f766e);
-        }
-
-        .demo-btn-left {
-          display: flex;
-          align-items: center;
-          gap: 10px;
+          gap: 12px;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 10px 25px -4px rgba(2, 132, 199, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.35);
+          position: relative;
+          overflow: hidden;
           text-align: left;
         }
 
-        .demo-sparkle-pill {
+        .btn-launch-doctor-demo-hero::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 65%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+          transform: skewX(-20deg);
+          animation: heroDemoShine 4s infinite;
+        }
+
+        @keyframes heroDemoShine {
+          0% { left: -100%; }
+          25% { left: 160%; }
+          100% { left: 160%; }
+        }
+
+        .btn-launch-doctor-demo-hero:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 30px -4px rgba(2, 132, 199, 0.6), 0 0 0 2px rgba(56, 189, 248, 0.5);
+          background: linear-gradient(135deg, #0369a1 0%, #075985 40%, #0f766e 100%);
+        }
+
+        .hero-demo-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .hero-demo-sparkle-pill {
           background: rgba(255, 255, 255, 0.22);
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
           color: #fef08a;
           flex-shrink: 0;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
         }
 
-        .demo-text-block {
+        .hero-sparkle-icon {
+          animation: sparkleSpin 4s infinite ease-in-out;
+        }
+
+        @keyframes sparkleSpin {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.15) rotate(15deg); }
+        }
+
+        .hero-demo-text-group {
           display: flex;
           flex-direction: column;
+          gap: 2px;
+          min-width: 0;
         }
 
-        .demo-btn-heading {
-          font-size: 0.82rem;
-          font-weight: 700;
-          letter-spacing: 0.01em;
+        .hero-demo-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
         }
 
-        .demo-btn-sub {
-          font-size: 0.69rem;
-          opacity: 0.88;
+        .hero-demo-title {
+          font-size: 0.95rem;
+          font-weight: 800;
+          letter-spacing: -0.01em;
+          color: #ffffff;
+          line-height: 1.2;
+        }
+
+        .hero-demo-badge {
+          background: rgba(255, 255, 255, 0.25);
+          border: 1px solid rgba(255, 255, 255, 0.45);
+          color: #ffffff;
+          padding: 1px 7px;
+          border-radius: 999px;
+          font-size: 0.62rem;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .hero-demo-subtitle {
+          font-size: 0.72rem;
+          color: rgba(255, 255, 255, 0.92);
           font-weight: 500;
+          line-height: 1.28;
+          white-space: normal;
         }
 
-        .demo-arrow-icon {
-          transition: transform var(--transition-fast);
+        .hero-demo-right-action {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(255, 255, 255, 0.22);
+          border: 1px solid rgba(255, 255, 255, 0.35);
+          padding: 6px 10px;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #ffffff;
           flex-shrink: 0;
+          transition: all 0.2s ease;
         }
 
-        .btn-launch-doctor-demo:hover .demo-arrow-icon {
-          transform: translateX(4px);
+        .btn-launch-doctor-demo-hero:hover .hero-demo-right-action {
+          background: rgba(255, 255, 255, 0.35);
+          transform: translateX(2px);
+        }
+
+        .hero-arrow-icon {
+          transition: transform 0.2s ease;
+        }
+
+        .btn-launch-doctor-demo-hero:hover .hero-arrow-icon {
+          transform: translateX(3px);
+        }
+
+        .login-divider-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 2px;
+        }
+
+        .divider-line {
+          flex: 1;
+          height: 1px;
+          background: rgba(148, 163, 184, 0.35);
+        }
+
+        .divider-label {
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          white-space: nowrap;
         }
 
         .login-footer-caption {
