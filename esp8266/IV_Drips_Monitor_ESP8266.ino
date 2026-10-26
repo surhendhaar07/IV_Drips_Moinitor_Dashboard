@@ -9,8 +9,10 @@
 // 1. BearSSL 16KB Heap Exhaustion Fix: fbdo.setBSSLBufferSize(1024, 512)
 // 2. Servo Detach Protection: Eliminates inrush brownout resets & motor jitter
 // 3. Buzzer continuous alarm on empty fluid (even when clamped)
-// 4. Zero-delay event-driven sync to Firebase RTDB
-// 5. Throttled OLED I2C display (250ms) to prevent WDT watchdog resets
+// 4. Hardware Timer Interrupt (Ticker.h) Buzzer: Rhythmic, constant-gap beeping immune to blocking network calls
+// 5. Sensor 60ms Debouncing: Eliminates meniscus jitter and false trigger pulses
+// 6. Zero-delay event-driven sync to Firebase RTDB
+// 7. Throttled OLED I2C display (250ms) to prevent WDT watchdog resets
 // =========================================================================
 
 // ===== Libraries =====
@@ -20,6 +22,7 @@
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 #include <Servo.h>
+#include <Ticker.h>
 
 // ===== Firebase Libraries =====
 #include <FirebaseESP8266.h>
@@ -68,10 +71,47 @@ String deviceId = "IV-DEVICE-001";
 bool lastLiquidState = true;
 bool forceImmediateSync = false;
 
-// ===== Timing & Anti-WDT Throttling =====
-bool buzzerState = LOW;
-unsigned long previousBuzzerFlip = 0;
-const unsigned long BUZZER_PERIOD = 250;
+// ===== Sensor Debounce State (Eliminates ripple/meniscus jitter) =====
+bool debouncedLiquidPresent = true;
+bool lastRawSensor = true;
+unsigned long lastSenseDebounceTime = 0;
+const unsigned long SENSE_DEBOUNCE_DELAY = 60; // 60ms noise filter
+
+// ===== BUZZER TIMING CONFIG (Hardware Timer Interrupt) =====
+// Uses ESP8266 hardware timer to produce steady, rhythmic beeps with a constant gap.
+// Completely immune to blocking Firebase / WiFi / OLED delays!
+const unsigned int BUZZER_BEEP_MS = 200; // Duration of active sound (BEEP) in ms
+const unsigned int BUZZER_GAP_MS  = 250; // Duration of silence between beeps (CONSTANT GAP) in ms
+
+#define BUZZER_TICK_MS 50
+const int BEEP_TICKS  = BUZZER_BEEP_MS / BUZZER_TICK_MS;        // 4 ticks (200ms)
+const int GAP_TICKS   = BUZZER_GAP_MS / BUZZER_TICK_MS;         // 5 ticks (250ms)
+const int CYCLE_TICKS = BEEP_TICKS + GAP_TICKS;                 // 9 ticks total (450ms cycle)
+
+Ticker buzzerTicker;
+volatile bool isBuzzerAlertActive = false;
+volatile int buzzerTickCount = 0;
+
+// Hardware Timer Interrupt Service Routine (Runs every 50ms regardless of loop delays)
+void IRAM_ATTR buzzerTimerCallback() {
+  if (!isBuzzerAlertActive) {
+    digitalWrite(BuzzerPin, LOW);
+    buzzerTickCount = 0;
+    return;
+  }
+
+  // Generate steady, constant cadence: BEEP for BEEP_TICKS, SILENCE for GAP_TICKS
+  if (buzzerTickCount < BEEP_TICKS) {
+    digitalWrite(BuzzerPin, HIGH);
+  } else {
+    digitalWrite(BuzzerPin, LOW);
+  }
+
+  buzzerTickCount++;
+  if (buzzerTickCount >= CYCLE_TICKS) {
+    buzzerTickCount = 0;
+  }
+}
 
 unsigned long lastAlertTime = 0;
 const unsigned long ALERT_INTERVAL = 60000;
@@ -95,6 +135,10 @@ void setup() {
   pinMode(SensePin, INPUT);
   pinMode(BuzzerPin, OUTPUT);
   digitalWrite(BuzzerPin, LOW);
+
+  // ===== BUZZER TIMER INIT (Hardware Timer Interrupt) =====
+  buzzerTicker.attach_ms(BUZZER_TICK_MS, buzzerTimerCallback);
+  Serial.println(">>> Buzzer hardware timer attached (steady cadence with constant gap).");
 
   // ===== SERVO INIT (Safe Soft Actuation) =====
   setValvePosition(120);   // Default: OPEN (120°)
@@ -151,8 +195,10 @@ void setup() {
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 
-  // Initialize state tracker
-  lastLiquidState = (digitalRead(SensePin) == HIGH);
+  // Initialize state tracker with initial sensor reading
+  debouncedLiquidPresent = (digitalRead(SensePin) == HIGH);
+  lastRawSensor = debouncedLiquidPresent;
+  lastLiquidState = debouncedLiquidPresent;
 
   Serial.print(">>> [5/5] Firebase Configured! Free Heap: ");
   Serial.print(ESP.getFreeHeap());
@@ -168,17 +214,26 @@ void loop() {
   }
   yield(); // Feed watchdog
 
-  // 2. Read Liquid Sensor
-  bool liquidPresent = (digitalRead(SensePin) == HIGH);
-  bool isClamped = (manualClamped || autoClamped);
-
-  // ===== INSTANT EVENT DETECTION (Removes Dashboard Latency) =====
-  if (liquidPresent != lastLiquidState) {
-    lastLiquidState = liquidPresent;
-    forceImmediateSync = true;
-    Serial.println(liquidPresent ? ">>> [EVENT] Fluid Restored! Instant sync triggered." 
-                                 : ">>> [EVENT] Fluid EMPTY! Instant emergency sync triggered.");
+  // 2. Read Liquid Sensor with 60ms Noise Debouncing
+  // Prevents fluid meniscus ripples or bubbles from creating erratic glitch beeps
+  bool currentRawSense = (digitalRead(SensePin) == HIGH);
+  if (currentRawSense != lastRawSensor) {
+    lastSenseDebounceTime = millis();
+    lastRawSensor = currentRawSense;
   }
+
+  if ((millis() - lastSenseDebounceTime) > SENSE_DEBOUNCE_DELAY) {
+    if (currentRawSense != debouncedLiquidPresent) {
+      debouncedLiquidPresent = currentRawSense;
+      lastLiquidState = debouncedLiquidPresent;
+      forceImmediateSync = true;
+      Serial.println(debouncedLiquidPresent ? ">>> [EVENT] Fluid Restored! Debounced & Verified." 
+                                            : ">>> [EVENT] Fluid EMPTY! Debounced & Verified.");
+    }
+  }
+
+  bool liquidPresent = debouncedLiquidPresent;
+  bool isClamped = (manualClamped || autoClamped);
 
   // ===== IMMEDIATE AUTO-CLAMP SAFETY LOGIC =====
   if (!liquidPresent && !isClamped) {
@@ -203,16 +258,13 @@ void loop() {
   String status = liquidPresent ? "normal" : "empty";
   if (!liquidPresent && batteryPercent < 20) status = "low";
 
-  // 4. BUZZER HANDLING - CONTINUOUS ALARM WHEN EMPTY (EVEN WHEN CLAMPED!)
+  // 4. BUZZER HANDLING - HARDWARE TIMER INTERRUPT ALARM
+  // Uses ESP8266 Ticker interrupt to maintain exact 200ms beep / 250ms gap
+  // Completely immune to blocking Firebase network calls or OLED refreshes!
   if (!liquidPresent) {
-    // Intermittent clinical alert pulse (250ms ON / 250ms OFF)
-    if (millis() - previousBuzzerFlip > BUZZER_PERIOD) {
-      previousBuzzerFlip = millis();
-      buzzerState = !buzzerState;
-      digitalWrite(BuzzerPin, buzzerState);
-    }
+    isBuzzerAlertActive = true;
 
-    // Blynk push alert
+    // Blynk push alert (rate-limited)
     if (millis() - lastAlertTime > ALERT_INTERVAL) {
       if (Blynk.connected()) {
         Blynk.logEvent("iv_drip_alert", "IV Bag EMPTY! Valve clamped & buzzer sounding.");
@@ -220,9 +272,9 @@ void loop() {
       lastAlertTime = millis();
     }
   } else {
-    // Fluid is present - silence buzzer
+    // Fluid is present - silence buzzer immediately
+    isBuzzerAlertActive = false;
     digitalWrite(BuzzerPin, LOW);
-    buzzerState = LOW;
   }
 
   // 5. Throttled OLED Rendering (Every 250ms to keep I2C bus & CPU free)

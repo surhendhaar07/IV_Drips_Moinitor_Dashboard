@@ -244,7 +244,7 @@ export default function SettingsView() {
                 <li>Microcontroller: ESP8266 NodeMCU v3</li>
                 <li>Sensor: XKC-Y25 Non-contact Optical Liquid Sensor (Pin D5)</li>
                 <li>Actuator: SG90 Micro Servo (Pin D4: 90° Clamped / 120° Open)</li>
-                <li>Audio: Active 5V Buzzer (Pin D6: 250ms flip)</li>
+                <li>Audio: Active 5V Buzzer (Pin D6: Ticker Interrupt 200ms pulse / 250ms constant gap)</li>
                 <li>Display: SSD1306 0.96" I2C OLED (SDA D1 / SCL D2)</li>
                 <li>Power: 18650 Li-ion + TP4056 Charger + MT3608 Step-up to 5V</li>
               </ul>
