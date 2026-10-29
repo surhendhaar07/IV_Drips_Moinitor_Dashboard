@@ -22,54 +22,36 @@ This web application is a Hospital Management & Telemetry Dashboard for IV Drip 
 ## 3. Firebase Realtime Database Synchronization Schema
 
 The dashboard connects directly to your Firebase Realtime Database at:
-`https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/`
+`https://iv-drips-monitor-8-e6682-default-rtdb.firebaseio.com/`
 
 ### Path: `/devices/{deviceId}`
-All patient details, room, bed, and hardware assignments are **strictly preserved** in Firebase. The ESP8266 firmware updates **only the dynamic telemetry keys** using `Firebase.updateNode` (PATCH):
+The Firebase Realtime Database strictly stores the **8 live IoT telemetry & control variables** synchronized between the physical ESP8266 node and the Web Dashboard:
 
 ```json
 {
-  "level": 100,           // 100 (fluid present) or 0 (empty)
-  "battery": 85,          // 0 to 100%
-  "status": "normal",     // "normal", "low", or "empty"
-  "flowStatus": "open",   // "open" or "clamped" (immediate safety latch)
-  "liquidPresent": true,  // true / false
-  "servoAngle": 120,      // 120 (open) or 90 (clamped)
-  "lastSeen": 1728901234, // Unix epoch or millis() heartbeat
-  "wifiDbm": -62,         // Wi-Fi signal in dBm
-  "signal": 4,            // 1 to 4 signal bars
-
-  // --- PRESERVED CLINICAL METADATA (Managed by Dashboard) ---
-  "room": "301",
-  "bed": "01",
-  "ward": "ICU Ward 3",
-  "assignedNurse": "nurse",
-  "assignedNurseName": "Nurse Elena Rostova",
-  "patient": {
-    "name": "Jane Doe",
-    "age": 42,
-    "gender": "Female",
-    "diagnosis": "Post-operative Hydration",
-    "fluidType": "Normal Saline 0.9% (500ml)",
-    "medicineName": "Potassium Chloride 20mEq",
-    "flowRate": 75,
-    "startTime": "08:30 AM",
-    "totalVolume": 500,
-    "remainingVolume": 360,
-    "notes": "Infusion running on schedule."
-  },
-  "hardware": {
-    "charger": "TP4056 Normal",
-    "sensor": "XKC-Y25 Non-contact Liquid Sensor",
-    "stepUp": "MT3608 5.0V Active"
-  }
+  "battery": 0,
+  "flowStatus": "clamped",
+  "lastSeen": 160049,
+  "level": 0,
+  "liquidPresent": false,
+  "servoAngle": 90,
+  "servoCommand": "OPEN",
+  "status": "low"
 }
 ```
 
-### Path: `/devices/{deviceId}/servoCommand` (Two-Way IoT Remote Control)
-- Written by Web Dashboard when Doctor/Nurse clicks **Toggle Clamp** or **Emergency Clamp**.
-- Commands: `"CLAMP"` (commands servo to 90°) or `"OPEN"` (commands servo to 120°).
-- Read by ESP8266 in its main loop to execute real-time physical valve actuation.
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `battery` | `int` | Battery capacity (0–100%) mapped from analog A0 voltage |
+| `flowStatus` | `String` | Flow status: `"open"`, `"clamped"`, or `"offline"` |
+| `lastSeen` | `long` | Millis uptime heartbeat (`millis()`) or epoch timestamp |
+| `level` | `int` | Liquid level: `100` (present) or `0` (empty) |
+| `liquidPresent`| `bool` | XKC sensor digital state: `true` (liquid present) or `false` (empty) |
+| `servoAngle` | `int` | Servo arm angle: `120` (open) or `90` (clamped) |
+| `servoCommand` | `String`| Remote dashboard command: `"OPEN"` or `"CLAMP"` |
+| `status` | `String` | Device health status: `"normal"`, `"low"`, `"empty"`, or `"offline"` |
+
+> 🔒 **Clinical Data Separation**: All patient admission data, doctor/nurse duty rosters, prescriptions, and room/bed allocations are stored in the browser's client-side **SQLite database** (`sqliteService.js`), keeping Firebase RTDB ultra-lightweight and focused strictly on live IoT telemetry.
 
 ### Path: `/alerts/{timestamp}`
 Logged automatically when fluid runs dry:
@@ -78,7 +60,7 @@ Logged automatically when fluid runs dry:
   "type": "empty",
   "deviceId": "IV-DEVICE-001",
   "level": 0,
-  "battery": 85,
+  "battery": 0,
   "timestamp": 1792135716625,
   "acknowledged": false
 }

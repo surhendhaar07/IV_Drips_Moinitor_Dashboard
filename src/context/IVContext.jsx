@@ -654,12 +654,14 @@ export function IVProvider({ children }) {
 
     setDevices(prev => [newDevice, ...prev]);
 
-    // Push ONLY the 6 essential IoT variables to Firebase RTDB (offline by default until hardware connects)
+    // Push ONLY the 8 essential IoT variables to Firebase RTDB (offline by default until hardware connects)
     await pushDeviceUpdate(newDevice.id, {
       battery: newDevice.battery,
       flowStatus: 'offline',
       lastSeen: 0,
       level: newDevice.level,
+      liquidPresent: false,
+      servoAngle: 120,
       servoCommand: 'OPEN',
       status: 'offline'
     });
@@ -885,12 +887,14 @@ export function IVProvider({ children }) {
       });
     }
 
-    // Push device telemetry update to Firebase (strictly essential variables)
+    // Push device telemetry update to Firebase (strictly essential 8 variables matching hardware & RTDB)
     await pushDeviceUpdate(deviceId, {
       level,
       battery: finalBattery,
       status: computedStatus,
       flowStatus,
+      liquidPresent,
+      servoAngle: isClamped ? 90 : 120,
       servoCommand: servoClamped ? 'CLAMP' : 'OPEN',
       lastSeen: Date.now()
     });

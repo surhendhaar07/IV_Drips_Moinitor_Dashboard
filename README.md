@@ -30,7 +30,7 @@
 13. [Scalability & Future Enhancements](#-scalability--future-enhancements)
 14. [Web Application Architecture & Features](#-web-application-architecture--features)
 15. [Getting Started](#-getting-started)
-16. [Demo Credentials](#-demo-credentials)
+16. [Staff Access & Authentication](#-staff-access--authentication)
 17. [Firebase Realtime Database Schema](#-firebase-realtime-database-schema)
 18. [Firmware Setup (ESP8266)](#-firmware-setup-esp8266)
 19. [Interactive Hardware Simulator](#-interactive-hardware-simulator)
@@ -272,7 +272,7 @@ During the development and testing phases, several key engineering insights and 
 
 The web frontend is a medical-grade dashboard built with modern React 19:
 
-- **Dashboard Grid View**: Real-time visual cards for every bed in the ward with fluid level progress rings, flow badges (`Open`, `Waiting`, `Clamped`), and Wi-Fi signal meters.
+- **Dashboard Grid View**: Real-time visual cards for every bed in the ward with fluid availability indicators, circular battery gauges, flow badges (`Open`, `Clamped`, `Offline`), and live connection indicators.
 - **Device Deep Details View**: Countdown progress indicator, remote two-way valve toggle button (`Toggle Clamp` / `Emergency Clamp`), and patient prescription details.
 - **Audio Synthesizer Engine**: Native Web Audio API tone synthesis creates distinct clinical warning frequencies without external audio file dependencies.
 - **In-Browser SQLite WASM Database**: Full client-side SQLite engine (`sql.js`) manages patient admissions, doctor assignments, and audit trails completely offline.
@@ -331,56 +331,44 @@ The platform provides role-based clinical access with individualized authenticat
 
 ## 📡 Firebase Realtime Database Schema
 
-### 1. Device Telemetry (`/devices/{deviceId}`)
+The Firebase Realtime Database stores strictly the **8 live IoT telemetry & control variables** synchronized between the physical ESP8266 node and the Web Dashboard. All clinical, patient, and staff records are intentionally kept in the client-side SQLite database.
+
+### 1. Device Telemetry & Control (`/devices/{deviceId}`)
 ```json
 {
-  "level": 100,
-  "battery": 85,
-  "status": "normal",
-  "flowStatus": "open",
-  "liquidPresent": true,
-  "servoAngle": 120,
-  "lastSeen": 1728901234,
-  "wifiDbm": -62,
-  "signal": 4,
-  "room": "301",
-  "bed": "01",
-  "ward": "ICU Ward 3",
-  "assignedNurse": "nurse",
-  "assignedNurseName": "Nurse Elena Rostova",
-  "patient": {
-    "name": "Jane Doe",
-    "age": 42,
-    "gender": "Female",
-    "diagnosis": "Post-operative Hydration",
-    "fluidType": "Normal Saline 0.9% (500ml)",
-    "medicineName": "Potassium Chloride 20mEq",
-    "flowRate": 75,
-    "startTime": "08:30 AM",
-    "totalVolume": 500,
-    "remainingVolume": 360,
-    "notes": "Infusion running on schedule."
-  },
-  "hardware": {
-    "charger": "TP4056 Normal",
-    "sensor": "XKC-Y26-V Non-contact Liquid Sensor",
-    "stepUp": "MT3608 5.0V Active"
-  }
+  "battery": 0,
+  "flowStatus": "clamped",
+  "lastSeen": 160049,
+  "level": 0,
+  "liquidPresent": false,
+  "servoAngle": 90,
+  "servoCommand": "OPEN",
+  "status": "low"
 }
 ```
 
-### 2. Two-Way Remote Valve Command (`/devices/{deviceId}/servoCommand`)
-- `"CLAMP"`: Actuates the servo to `90°` (halts IV fluid flow).
-- `"OPEN"`: Actuates the servo to `120°` (restores normal infusion).
+| Key | Type | Description | Values / Examples |
+| :--- | :--- | :--- | :--- |
+| `battery` | `number` | Battery percentage mapped from analog pin A0 via voltage divider | `0` – `100` (%) |
+| `flowStatus` | `string` | Fluid flow physical state | `"open"`, `"clamped"`, `"offline"` |
+| `lastSeen` | `number` | Hardware uptime heartbeat in milliseconds / timestamp | e.g. `160049` (`millis()`) |
+| `level` | `number` | Saline fluid level indicator | `100` (fluid present), `0` (empty) |
+| `liquidPresent` | `boolean` | Digital reading from XKC-Y26-V non-contact sensor | `true` (liquid detected), `false` (air/dry) |
+| `servoAngle` | `number` | Current physical angle of the SG90 micro-servo valve | `120` (open / normal flow), `90` (clamped) |
+| `servoCommand` | `string` | Two-way remote control command issued from Dashboard | `"OPEN"` (normal flow), `"CLAMP"` (emergency clamp) |
+| `status` | `string` | Overall operational and health status | `"normal"`, `"low"`, `"empty"`, `"offline"` |
 
-### 3. Incident Alerts (`/alerts/{timestamp}`)
+> 🔒 **Clinical Data Architecture Note**: Patient records (name, age, diagnosis, medication, volume), room/bed assignments, attending doctors, and duty nurses are **not** stored in Firebase RTDB. Instead, they are stored securely in the browser's client-side **SQLite Database** (`sqliteService.js`), keeping Firebase Realtime Database lightweight, fast, and strictly dedicated to real-time IoT hardware telemetry.
+
+### 2. Incident Alerts (`/alerts/{timestamp}`)
+Logged automatically when fluid runs dry:
 ```json
 {
   "type": "empty",
   "deviceId": "IV-DEVICE-001",
   "level": 0,
-  "battery": 85,
-  "timestamp": 1728901234000,
+  "battery": 0,
+  "timestamp": 1792135716625,
   "acknowledged": false
 }
 ```
